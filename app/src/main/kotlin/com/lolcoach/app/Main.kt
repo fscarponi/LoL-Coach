@@ -109,6 +109,7 @@ fun main() = application {
         transparent = true,
         undecorated = true,
         alwaysOnTop = true,
+        focusable = false,
         resizable = false
     ) {
         Column(

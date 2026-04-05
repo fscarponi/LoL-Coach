@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -16,7 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.lolcoach.brain.state.GameState
 
 @Composable
-fun StatusBar(state: GameState) {
+fun StatusBar(state: GameState, barAlpha: Float = 0.85f) {
     val (statusText, statusColor) = when (state) {
         is GameState.Idle -> "Disconnesso" to Color(0xFF_F44336)
         is GameState.ChampSelect -> "Champion Select" to Color(0xFF_FF9800)
@@ -27,8 +28,9 @@ fun StatusBar(state: GameState) {
 
     Row(
         modifier = Modifier
+            .alpha(barAlpha)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xDD_1A1A2E))
+            .background(Color(0xAA_1A1A2E))
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)

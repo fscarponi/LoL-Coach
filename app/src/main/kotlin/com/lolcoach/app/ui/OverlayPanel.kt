@@ -1,8 +1,5 @@
 package com.lolcoach.app.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -19,11 +17,12 @@ import com.lolcoach.app.viewmodel.OverlayViewModel
 import com.lolcoach.brain.event.GameEvent
 
 @Composable
-fun OverlayPanel(events: List<OverlayViewModel.TimedEvent>) {
+fun OverlayPanel(events: List<OverlayViewModel.TimedEvent>, overlayAlpha: Float = 0.85f) {
     Column(
         modifier = Modifier
             .padding(8.dp)
-            .width(350.dp),
+            .width(350.dp)
+            .alpha(overlayAlpha),
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalAlignment = Alignment.End
     ) {
@@ -36,14 +35,14 @@ fun OverlayPanel(events: List<OverlayViewModel.TimedEvent>) {
 @Composable
 fun EventCard(event: GameEvent) {
     val (bgColor, icon) = when (event) {
-        is GameEvent.Level2Approaching -> Color(0xCC_FF8C00) to "⚔️"
-        is GameEvent.Level2Reached -> Color(0xCC_00C853) to "🎯"
-        is GameEvent.EnemySupportSelected -> Color(0xCC_D50000) to "🛡️"
-        is GameEvent.VisionNeeded -> Color(0xCC_2962FF) to "👁️"
-        is GameEvent.DragonTimerWarning -> Color(0xCC_AA00FF) to "🐉"
-        is GameEvent.ItemSuggestion -> Color(0xCC_FFD600) to "🛒"
-        is GameEvent.SynergyAdvice -> Color(0xCC_00BFA5) to "🤝"
-        is GameEvent.GenericTip -> Color(0xCC_546E7A) to "💡"
+        is GameEvent.Level2Approaching -> Color(0xAA_FF8C00) to "⚔️"
+        is GameEvent.Level2Reached -> Color(0xAA_00C853) to "🎯"
+        is GameEvent.EnemySupportSelected -> Color(0xAA_D50000) to "🛡️"
+        is GameEvent.VisionNeeded -> Color(0xAA_2962FF) to "👁️"
+        is GameEvent.DragonTimerWarning -> Color(0xAA_AA00FF) to "🐉"
+        is GameEvent.ItemSuggestion -> Color(0xAA_FFD600) to "🛒"
+        is GameEvent.SynergyAdvice -> Color(0xAA_00BFA5) to "🤝"
+        is GameEvent.GenericTip -> Color(0xAA_546E7A) to "💡"
     }
 
     Box(
