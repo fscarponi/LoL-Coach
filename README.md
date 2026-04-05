@@ -10,13 +10,13 @@ Il progetto è suddiviso in 3 moduli:
 LoL-Coach/
 ├── bridge/    # I/O e comunicazione con le API Riot (LCU + Live Client Data)
 ├── brain/     # Logica decisionale, state machine, strategie
-└── app/       # UI Overlay (Compose Desktop) + TTS
+└── app/       # Dashboard UI + Overlay (Compose Desktop) + TTS
 ```
 
 ### Flusso Dati
 
 ```
-[LoL Client] → Bridge (Lockfile + Ktor) → Brain (StateMachine + Strategies) → App (Overlay UI + TTS)
+[LoL Client] → Bridge (Lockfile + Ktor) → Brain (StateMachine + Strategies) → App (Dashboard + Overlay + TTS)
 ```
 
 ## Stack Tecnologico
@@ -47,7 +47,14 @@ LoL-Coach/
   - `ChampSelectStrategy`: Analisi sinergie ADC-Support e detection support nemico.
 
 ### App Module
-- **Overlay UI**: Finestra trasparente `alwaysOnTop` con notifiche colorate per tipo di evento.
+- **Dashboard UI**: Finestra principale informativa con pannelli real-time:
+  - **ConnectionPanel**: Stato connessione lockfile e Live Client Data.
+  - **GameStatePanel**: Fase corrente di gioco (Idle, ChampSelect, InGame, ecc.).
+  - **GameInfoPanel**: Statistiche champion attivo (livello, HP, gold, CS).
+  - **PlayersPanel**: Lista alleati e nemici con KDA e champion.
+  - **EventsPanel**: Storico eventi strategia con timestamp scrollabile.
+  - **LogPanel**: Log applicativi in tempo reale con filtri per livello (DEBUG, INFO, WARN, ERROR, EVENT).
+- **Overlay UI**: Finestra compatta semi-trasparente `alwaysOnTop` e `focusable=false` con notifiche colorate per tipo di evento, progettata per non interferire con il gioco.
 - **StatusBar**: Indicatore stato connessione e fase di gioco.
 - **TTS**: Sistema text-to-speech con coda asincrona (SystemTTS o Piper).
 
