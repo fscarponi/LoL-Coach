@@ -1,8 +1,11 @@
 package com.lolcoach.brain.llm
 
 import com.lolcoach.brain.event.GameEvent
+import com.lolcoach.brain.llm.model.AnalysisSection
+import com.lolcoach.brain.llm.model.LlmResponse
+import com.lolcoach.brain.llm.model.RequestBuilder
+import com.lolcoach.brain.llm.prompt.PromptLoader
 import com.lolcoach.brain.state.GameMode
-import com.lolcoach.brain.strategy.ChampSelectStrategy.Companion.CHAMPION_NAMES
 import com.lolcoach.bridge.model.lcu.ChampSelectSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -13,6 +16,9 @@ import kotlinx.coroutines.launch
 /**
  * Servizio che usa un LLM per generare analisi approfondite durante champ select e loading.
  * Produce GameEvent.LlmAnalysis con sezioni: Analisi Comp, Win Condition, Cosa Evitare, Priorità.
+ *
+ * Usa PromptLoader per caricare i system prompt dai file .md per modalità,
+ * e RequestBuilder per costruire richieste strutturate.
  */
 class LlmCoachService(
     private val scope: CoroutineScope,
@@ -30,37 +36,11 @@ class LlmCoachService(
     }
 
     companion object {
-        fun buildSystemPrompt(gameMode: GameMode): String {
-            val modeContext = when (gameMode) {
-                GameMode.ARAM, GameMode.ARAM_MAYHEM -> """
-                    La partita è in modalità ${gameMode.displayName} (Howling Abyss, corsia singola, 5v5 teamfight costanti).
-                    Adatta i consigli: non ci sono lane, jungle, dragon o baron. Focus su teamfight, poke, engage/disengage,
-                    gestione health pack, timing dei back (morte = unico modo per comprare), e sinergie di squadra in fight.
-                """.trimIndent()
-                GameMode.SUMMONERS_RIFT -> """
-                    La partita è in modalità Summoner's Rift (mappa classica 5v5 con lane, jungle e obiettivi).
-                    Adatta i consigli al ruolo Support in bot lane: visione, roaming, obiettivi, peeling.
-                """.trimIndent()
-                GameMode.UNKNOWN -> "Modalità di gioco non ancora determinata. Dai consigli generali."
-            }
-            return """
-                Sei un coach esperto di League of Legends, specializzato nel ruolo Support.
-                Rispondi SEMPRE in italiano. Sii conciso ma strategicamente preciso.
-                
-                $modeContext
-                
-                Quando ricevi la composizione dei team, analizza e rispondi con ESATTAMENTE queste 4 sezioni,
-                usando questo formato (una sezione per riga, prefissata dal tag):
-                
-                [COMP] Breve analisi della composizione di entrambi i team (punti di forza e debolezza)
-                [WIN] Win condition principale per il tuo team dal punto di vista del Support
-                [EVITA] Cosa evitare assolutamente in questa partita (errori critici)
-                [PRIORITA] Le 2-3 priorità chiave su cui concentrarsi come Support
-                
-                Ogni sezione deve essere una singola riga di massimo 150 caratteri.
-                Non usare elenchi puntati, asterischi o formattazione markdown.
-            """.trimIndent()
-        }
+        /**
+         * Costruisce il system prompt per la modalità specificata.
+         * Usa PromptLoader per caricare dai file .md nelle resources.
+         */
+        fun buildSystemPrompt(gameMode: GameMode): String = PromptLoader.getSystemPrompt(gameMode)
 
         // Backward compatibility
         val SYSTEM_PROMPT = buildSystemPrompt(GameMode.SUMMONERS_RIFT)
@@ -77,10 +57,12 @@ class LlmCoachService(
 
         scope.launch {
             try {
-                val prompt = buildChampSelectPrompt(session)
+                val request = RequestBuilder.fromChampSelect(session, currentGameMode)
+                val userPrompt = RequestBuilder.toUserPrompt(request)
                 val systemPrompt = buildSystemPrompt(currentGameMode)
-                val response = llmProvider.chat(systemPrompt, prompt)
-                parseAndEmitAnalysis(response)
+                val rawResponse = llmProvider.chat(systemPrompt, userPrompt)
+                val response = parseResponse(rawResponse)
+                emitAnalysis(response)
             } catch (e: Exception) {
                 _analysisEvents.emit(
                     GameEvent.LlmAnalysis("ERRORE", "LLM non disponibile: ${e.message?.take(80)}")
@@ -108,55 +90,38 @@ class LlmCoachService(
         return if (myChamps.isNotEmpty() || theirChamps.isNotEmpty()) "$myChamps|$theirChamps" else ""
     }
 
-    private fun buildChampSelectPrompt(session: ChampSelectSession): String {
-        val myTeam = session.myTeam.mapNotNull { player ->
-            if (player.championId > 0) {
-                val name = CHAMPION_NAMES[player.championId] ?: "Champion#${player.championId}"
-                val role = player.assignedPosition.ifBlank { "?" }
-                "$name ($role)"
-            } else null
-        }
-
-        val theirTeam = session.theirTeam.mapNotNull { player ->
-            if (player.championId > 0) {
-                val name = CHAMPION_NAMES[player.championId] ?: "Champion#${player.championId}"
-                val role = player.assignedPosition.ifBlank { "?" }
-                "$name ($role)"
-            } else null
-        }
-
-        return buildString {
-            appendLine("Il mio team: ${myTeam.joinToString(", ").ifEmpty { "non ancora selezionato" }}")
-            appendLine("Team nemico: ${theirTeam.joinToString(", ").ifEmpty { "non ancora visibile" }}")
-            appendLine("Io gioco Support.")
-            appendLine("Analizza la composizione e dammi i consigli strategici.")
-        }
-    }
-
-    private suspend fun parseAndEmitAnalysis(response: String) {
-        val sectionMap = mapOf(
-            "[COMP]" to "Analisi Comp",
-            "[WIN]" to "Win Condition",
-            "[EVITA]" to "Cosa Evitare",
-            "[PRIORITA]" to "Priorità"
-        )
-
-        val lines = response.lines().map { it.trim() }.filter { it.isNotBlank() }
+    /**
+     * Parsa la risposta grezza dell'LLM in un LlmResponse strutturato.
+     */
+    internal fun parseResponse(rawResponse: String): LlmResponse {
+        val sections = mutableListOf<AnalysisSection>()
+        val lines = rawResponse.lines().map { it.trim() }.filter { it.isNotBlank() }
 
         for (line in lines) {
-            for ((tag, sectionName) in sectionMap) {
-                if (line.startsWith(tag, ignoreCase = true)) {
-                    val content = line.removePrefix(tag).trim()
+            for ((tag, label) in AnalysisSection.KNOWN_TAGS) {
+                if (line.startsWith("[$tag]", ignoreCase = true)) {
+                    val content = line.removePrefix("[$tag]").trim()
                     if (content.isNotBlank()) {
-                        _analysisEvents.emit(GameEvent.LlmAnalysis(sectionName, content))
+                        sections.add(AnalysisSection(tag, label, content))
                     }
                 }
             }
         }
 
-        // Se il modello non ha rispettato il formato, emetti la risposta grezza
-        if (lines.none { line -> sectionMap.keys.any { line.startsWith(it, ignoreCase = true) } }) {
-            _analysisEvents.emit(GameEvent.LlmAnalysis("Analisi LLM", response.take(500)))
+        return LlmResponse(
+            sections = sections,
+            rawText = rawResponse
+        )
+    }
+
+    private suspend fun emitAnalysis(response: LlmResponse) {
+        if (response.sections.isNotEmpty()) {
+            for (section in response.sections) {
+                _analysisEvents.emit(GameEvent.LlmAnalysis(section.label, section.content))
+            }
+        } else {
+            // Fallback: il modello non ha rispettato il formato
+            _analysisEvents.emit(GameEvent.LlmAnalysis("Analisi LLM", response.rawText.take(500)))
         }
     }
 }
