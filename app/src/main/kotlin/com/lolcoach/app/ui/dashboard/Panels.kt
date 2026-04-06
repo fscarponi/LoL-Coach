@@ -4,7 +4,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,31 +31,28 @@ import com.lolcoach.app.i18n.Strings
 import com.lolcoach.app.logging.LogEntry
 import com.lolcoach.app.logging.LogLevel
 import com.lolcoach.app.ui.theme.LolColors
-import com.lolcoach.app.viewmodel.ConnectionStatus
 import com.lolcoach.app.viewmodel.DashboardViewModel
 import com.lolcoach.brain.event.GameEvent
-import com.lolcoach.brain.state.GameMode
-import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
 import com.lolcoach.bridge.voice.DownloadState
 import com.lolcoach.bridge.voice.VoiceDevice
 import java.text.SimpleDateFormat
 import java.util.*
 
-// ─── Section Header ───────────────────────────────────────────
+// ─── Shared Components ────────────────────────────────────────
 
 @Composable
 fun SectionHeader(title: String, emoji: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.padding(bottom = 6.dp)
+        modifier = Modifier.padding(bottom = 8.dp)
     ) {
-        Text(emoji, fontSize = 14.sp)
+        Text(emoji, fontSize = 13.sp)
         Text(
             text = title.uppercase(),
-            color = LolColors.BlueLight,
-            style = MaterialTheme.typography.labelLarge,
+            color = LolColors.Gold,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp
         )
@@ -61,149 +60,19 @@ fun SectionHeader(title: String, emoji: String) {
 }
 
 @Composable
-fun ConnectionAndStatePanel(
-    status: ConnectionStatus,
-    state: GameState,
-    gameMode: GameMode = GameMode.UNKNOWN,
-    modifier: Modifier = Modifier
+fun DashboardCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    val (stateName, stateColor, stateEmoji) = when (state) {
-        is GameState.Idle -> Triple(Strings.Idle, LolColors.Danger, "⏸️")
-        is GameState.ChampSelect -> Triple(Strings.ChampSelect, LolColors.Gold, "🎮")
-        is GameState.Loading -> Triple(Strings.Loading, LolColors.GoldLight, "⏳")
-        is GameState.InGame -> Triple(Strings.InGame, LolColors.Success, "⚔️")
-        is GameState.PostGame -> Triple(Strings.PostGame, LolColors.OnSurface.copy(alpha = 0.5f), "🏁")
-    }
-
-    val modeColor = when (gameMode) {
-        GameMode.SUMMONERS_RIFT -> LolColors.BlueLight
-        GameMode.ARAM -> LolColors.Gold
-        GameMode.ARAM_MAYHEM -> Color(0xFF_FF4081)
-        GameMode.UNKNOWN -> LolColors.OnSurface.copy(alpha = 0.5f)
-    }
-
-    DashboardCard(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SectionHeader(Strings.Connection.uppercase(), "🔌")
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stateEmoji, fontSize = 16.sp)
-                Spacer(Modifier.width(4.dp))
-                Text(
-                    text = stateName,
-                    color = stateColor,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Column(modifier = Modifier.weight(1f)) {
-                StatusRow(
-                    label = Strings.Lockfile,
-                    active = status.lockfileFound,
-                    detail = if (status.lockfileFound) "Port ${status.lockfilePort}" else Strings.NotFound
-                )
-                Spacer(Modifier.height(4.dp))
-                StatusRow(
-                    label = Strings.LiveClient,
-                    active = status.liveClientActive,
-                    detail = if (status.liveClientActive) {
-                        status.lastSnapshotTime?.let {
-                            val ago = (System.currentTimeMillis() - it) / 1000
-                            Strings.lastSnapshot(ago)
-                        } ?: Strings.Connected
-                    } else Strings.NotActive
-                )
-            }
-
-            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🗺️", fontSize = 12.sp)
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = gameMode.displayName,
-                        color = modeColor,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun StatusRow(label: String, active: Boolean, detail: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(if (active) LolColors.Success else LolColors.Danger)
-        )
-        Text(label, color = LolColors.OnSurface, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.weight(1f))
-        Text(detail, color = LolColors.OnSurface.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall)
-    }
-}
-
-// ─── Game State Panel ─────────────────────────────────────────
-
-@Composable
-fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN, modifier: Modifier = Modifier) {
-    val (stateName, stateColor, stateEmoji) = when (state) {
-        is GameState.Idle -> Triple(Strings.Idle, LolColors.Danger, "⏸️")
-        is GameState.ChampSelect -> Triple(Strings.ChampSelect, LolColors.Gold, "🎮")
-        is GameState.Loading -> Triple(Strings.Loading, LolColors.GoldLight, "⏳")
-        is GameState.InGame -> Triple(Strings.InGame, LolColors.Success, "⚔️")
-        is GameState.PostGame -> Triple(Strings.PostGame, LolColors.OnSurface.copy(alpha = 0.5f), "🏁")
-    }
-
-    val modeColor = when (gameMode) {
-        GameMode.SUMMONERS_RIFT -> LolColors.BlueLight
-        GameMode.ARAM -> LolColors.Gold
-        GameMode.ARAM_MAYHEM -> Color(0xFF_FF4081)
-        GameMode.UNKNOWN -> LolColors.OnSurface.copy(alpha = 0.5f)
-    }
-
-    DashboardCard(modifier = modifier) {
-        SectionHeader("Game State", "🎯")
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(stateEmoji, fontSize = 24.sp)
-            Column {
-                Text(
-                    text = stateName,
-                    color = stateColor,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🗺️", fontSize = 12.sp)
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = gameMode.displayName,
-                        color = modeColor,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(LolColors.CardGradient)
+            .border(1.dp, LolColors.Border.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+            .padding(12.dp),
+        content = content
+    )
 }
 
 // ─── Game Info Panel ──────────────────────────────────────────
@@ -211,77 +80,76 @@ fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN, modi
 @Composable
 fun GameInfoPanel(snapshot: GameSnapshot?, modifier: Modifier = Modifier) {
     DashboardCard(modifier = modifier) {
-        SectionHeader("GAME INFO", "📊")
+        SectionHeader("Game Info", "📊")
 
         if (snapshot == null || snapshot.activePlayer == null) {
-            Text(
-                text = "No game data available",
-                color = LolColors.OnSurface.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.bodySmall
-            )
+            EmptyState("No game data available")
         } else {
             val ap = snapshot.activePlayer!!
             val gd = snapshot.gameData
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            // Champion + Level + Time row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Summoner info
                 Column(modifier = Modifier.weight(1f)) {
-                    InfoRow("Summoner", ap.summonerName.ifEmpty { ap.riotId })
-                    InfoRow("Gold", "%.0f".format(ap.currentGold))
-                    if (gd != null) {
-                        val minutes = (gd.gameTime / 60).toInt()
-                        val seconds = (gd.gameTime % 60).toInt()
-                        InfoRow("Time", "%d:%02d".format(minutes, seconds))
+                    Text(
+                        ap.summonerName.ifEmpty { ap.riotId },
+                        style = MaterialTheme.typography.titleSmall,
+                        color = LolColors.GoldLight,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatBadge("Lvl ${ap.level}", LolColors.BlueLight)
+                        StatBadge("%.0f Gold".format(ap.currentGold), LolColors.Gold)
+                        if (gd != null) {
+                            val minutes = (gd.gameTime / 60).toInt()
+                            val seconds = (gd.gameTime % 60).toInt()
+                            StatBadge("%d:%02d".format(minutes, seconds), LolColors.OnSurface.copy(alpha = 0.7f))
+                        }
                     }
                 }
-                Column(modifier = Modifier.weight(1f)) {
-                    InfoRow("Level", "${ap.level}")
-                    if (ap.neededExp > 0) {
-                        val progress = ap.currentExp / ap.neededExp
+
+                // EXP bar
+                if (ap.neededExp > 0) {
+                    Column(modifier = Modifier.width(120.dp), horizontalAlignment = Alignment.End) {
+                        Text(
+                            "EXP %.0f / %.0f".format(ap.currentExp, ap.neededExp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = LolColors.OnSurface.copy(alpha = 0.5f)
+                        )
+                        Spacer(Modifier.height(2.dp))
                         LinearProgressIndicator(
-                            progress = { progress.toFloat() },
+                            progress = { (ap.currentExp / ap.neededExp).toFloat() },
                             modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
                             color = LolColors.BlueLight,
                             trackColor = LolColors.BlueMedium
                         )
-                        Text(
-                            text = "EXP: %.0f / %.0f".format(ap.currentExp, ap.neededExp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = LolColors.OnSurface.copy(alpha = 0.5f)
-                        )
                     }
                 }
             }
 
-            if (gd != null) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        InfoRow("Mode", gd.gameMode)
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        InfoRow("Map", gd.mapName.ifEmpty { "Map ${gd.mapNumber}" })
-                    }
-                }
-            }
-
+            // Stats grid
             ap.championStats?.let { stats ->
                 Spacer(Modifier.height(10.dp))
-                Text(
-                    text = "BASE STATS",
-                    color = LolColors.BlueLight,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
-                Spacer(Modifier.height(4.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    StatChip("HP", "%.0f".format(stats.maxHealth))
-                    StatChip("AD", "%.0f".format(stats.attackDamage))
-                    StatChip("AP", "%.0f".format(stats.abilityPower))
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    StatChip("ARM", "%.0f".format(stats.armor))
-                    StatChip("MR", "%.0f".format(stats.magicResist))
-                    StatChip("MS", "%.0f".format(stats.moveSpeed))
+                HorizontalDivider(color = LolColors.Border.copy(alpha = 0.4f), thickness = 1.dp)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatChip("HP", "%.0f".format(stats.maxHealth), LolColors.SuccessGreen)
+                    StatChip("AD", "%.0f".format(stats.attackDamage), LolColors.Danger)
+                    StatChip("AP", "%.0f".format(stats.abilityPower), LolColors.BlueLight)
+                    StatChip("ARM", "%.0f".format(stats.armor), LolColors.Gold)
+                    StatChip("MR", "%.0f".format(stats.magicResist), Color(0xFF_AA66CC))
+                    StatChip("MS", "%.0f".format(stats.moveSpeed), LolColors.OnSurface.copy(alpha = 0.7f))
                 }
             }
         }
@@ -289,30 +157,34 @@ fun GameInfoPanel(snapshot: GameSnapshot?, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, color = LolColors.OnSurface.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall)
-        Text(value, color = LolColors.OnSurface, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+private fun StatBadge(text: String, color: Color) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = color,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .clip(RoundedCornerShape(3.dp))
+            .background(color.copy(alpha = 0.1f))
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    )
+}
+
+@Composable
+fun StatChip(label: String, value: String, color: Color = LolColors.GoldLight) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.bodySmall, color = color, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = LolColors.Muted)
     }
 }
 
 @Composable
-fun StatChip(label: String, value: String) {
-    Surface(
-        color = LolColors.BlueMedium,
-        shape = RoundedCornerShape(4.dp),
-        modifier = Modifier.padding(2.dp)
+private fun EmptyState(text: String) {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            "$label: $value",
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = LolColors.GoldLight
-        )
+        Text(text, color = LolColors.Muted, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -324,41 +196,37 @@ fun PlayersPanel(snapshot: GameSnapshot?, modifier: Modifier = Modifier) {
         SectionHeader("Players", "👥")
 
         if (snapshot == null || snapshot.allPlayers.isEmpty()) {
-            Text(
-                "No players detected",
-                color = LolColors.OnSurface.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.bodySmall
-            )
+            EmptyState("No players detected")
         } else {
             val allies = snapshot.allPlayers.filter { it.team == "ORDER" }
             val enemies = snapshot.allPlayers.filter { it.team == "CHAOS" }
 
             if (allies.isNotEmpty()) {
-                Text(
-                    "🔵 ALLIES",
-                    color = LolColors.BlueLight,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(4.dp))
+                TeamLabel("ALLIES", LolColors.BlueLight, "🔵")
                 allies.forEach { player ->
-                    PlayerRow(player.championName, player.position, player.scores, Color(0xFF_58A6FF), player.level)
+                    PlayerRow(player.championName, player.position, player.scores, LolColors.BlueLight, player.level)
                 }
             }
             if (enemies.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    "🔴 ENEMIES",
-                    color = LolColors.Danger,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.height(4.dp))
+                TeamLabel("ENEMIES", LolColors.DangerMuted, "🔴")
                 enemies.forEach { player ->
-                    PlayerRow(player.championName, player.position, player.scores, LolColors.Danger, player.level)
+                    PlayerRow(player.championName, player.position, player.scores, LolColors.DangerMuted, player.level)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TeamLabel(text: String, color: Color, icon: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.padding(bottom = 4.dp)
+    ) {
+        Text(icon, fontSize = 10.sp)
+        Text(text, style = MaterialTheme.typography.labelSmall, color = color, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
     }
 }
 
@@ -373,40 +241,43 @@ fun PlayerRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(vertical = 1.dp)
             .clip(RoundedCornerShape(4.dp))
             .background(teamColor.copy(alpha = 0.05f))
-            .padding(vertical = 4.dp, horizontal = 6.dp),
+            .padding(vertical = 4.dp, horizontal = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(4.dp, 24.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(teamColor)
-        )
+        // Team color indicator
+        Box(Modifier.size(3.dp, 20.dp).clip(RoundedCornerShape(2.dp)).background(teamColor))
+
+        // Champion name + position
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     champion.ifEmpty { "?" },
                     color = LolColors.GoldLight,
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    "Lvl $level",
-                    color = LolColors.OnSurface.copy(alpha = 0.7f),
+                    "Lv$level",
+                    color = LolColors.Muted,
                     style = MaterialTheme.typography.labelSmall
                 )
             }
-            Text(
-                position.ifEmpty { "—" }.lowercase(),
-                color = LolColors.OnSurface.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.labelSmall
-            )
+            if (position.isNotEmpty()) {
+                Text(
+                    position.lowercase(),
+                    color = LolColors.Muted,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
         }
+
+        // KDA + CS
         if (scores != null) {
             Text(
                 "${scores.kills}/${scores.deaths}/${scores.assists}",
@@ -415,8 +286,8 @@ fun PlayerRow(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "CS ${scores.creepScore}",
-                color = LolColors.OnSurface.copy(alpha = 0.7f),
+                "${scores.creepScore} CS",
+                color = LolColors.Muted,
                 style = MaterialTheme.typography.labelSmall
             )
         }
@@ -431,26 +302,19 @@ fun LlmAnalysisPanel(
     modifier: Modifier = Modifier
 ) {
     DashboardCard(modifier = modifier) {
-        SectionHeader("LLM Coach Analysis", "🧠")
+        SectionHeader("Coach Analysis", "🧠")
 
         if (analyses.isEmpty()) {
-            Text(
-                text = "Waiting for champion select for LLM analysis...",
-                color = LolColors.OnSurface.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.bodySmall
-            )
+            EmptyState("Waiting for champion select for analysis...")
         } else {
             val listState = rememberLazyListState()
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(analyses, key = { it.section }) { analysis ->
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + expandVertically()
-                    ) {
+                    AnimatedVisibility(visible = true, enter = fadeIn() + expandVertically()) {
                         LlmAnalysisRow(analysis)
                     }
                 }
@@ -461,35 +325,37 @@ fun LlmAnalysisPanel(
 
 @Composable
 fun LlmAnalysisRow(analysis: GameEvent.LlmAnalysis) {
-    val color = when (analysis.section) {
-        "Comp Analysis" -> LolColors.BlueLight
-        "Win Condition" -> LolColors.Success
-        "What to Avoid" -> LolColors.Danger
-        "Priority" -> LolColors.Gold
-        "ERROR" -> LolColors.Danger
-        else -> LolColors.GoldLight
+    val (color, icon) = when (analysis.section) {
+        "Comp Analysis" -> LolColors.BlueLight to "📊"
+        "Win Condition" -> LolColors.SuccessGreen to "🏆"
+        "What to Avoid" -> LolColors.DangerMuted to "⚠️"
+        "Priority" -> LolColors.Gold to "🎯"
+        "ERROR" -> LolColors.Danger to "❌"
+        else -> LolColors.GoldLight to "💡"
     }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
             .clip(RoundedCornerShape(6.dp))
-            .background(color.copy(alpha = 0.05f))
-            .border(1.dp, color.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+            .background(color.copy(alpha = 0.06f))
+            .border(1.dp, color.copy(alpha = 0.12f), RoundedCornerShape(6.dp))
             .padding(10.dp)
     ) {
-        Text(
-            text = analysis.section.uppercase(),
-            color = color,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(icon, fontSize = 12.sp)
+            Text(
+                analysis.section.uppercase(),
+                color = color,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
+            )
+        }
         Spacer(Modifier.height(4.dp))
         Text(
-            text = analysis.content,
-            color = LolColors.OnSurface,
+            analysis.content,
+            color = LolColors.OnSurface.copy(alpha = 0.85f),
             style = MaterialTheme.typography.bodySmall,
             lineHeight = 18.sp
         )
@@ -504,14 +370,10 @@ fun EventsPanel(
     modifier: Modifier = Modifier
 ) {
     DashboardCard(modifier = modifier) {
-        SectionHeader("Strategy Events", "🧠")
+        SectionHeader("Strategy Events", "⚡")
 
         if (events.isEmpty()) {
-            Text(
-                text = "No events generated",
-                color = LolColors.OnSurface.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.bodySmall
-            )
+            EmptyState("No events generated")
         } else {
             val listState = rememberLazyListState()
             LazyColumn(
@@ -520,10 +382,7 @@ fun EventsPanel(
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 items(events, key = { it.timestamp }) { entry ->
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = slideInHorizontally { -40 } + fadeIn()
-                    ) {
+                    AnimatedVisibility(visible = true, enter = slideInHorizontally { -30 } + fadeIn()) {
                         EventRow(entry)
                     }
                 }
@@ -537,48 +396,46 @@ fun EventRow(entry: DashboardViewModel.TimestampedGameEvent) {
     val timeStr = remember(entry.timestamp) { SimpleDateFormat("HH:mm:ss").format(Date(entry.timestamp)) }
     val (icon, color) = when (entry.event) {
         is GameEvent.Level2Approaching -> "⚔️" to LolColors.Danger
-        is GameEvent.Level2Reached -> "🎯" to LolColors.Success
-        is GameEvent.EnemySupportSelected -> "🛡️" to LolColors.Danger
+        is GameEvent.Level2Reached -> "🎯" to LolColors.SuccessGreen
+        is GameEvent.EnemySupportSelected -> "🛡️" to LolColors.DangerMuted
         is GameEvent.VisionNeeded -> "👁️" to LolColors.BlueLight
-        is GameEvent.DragonTimerWarning -> "🐉" to Color(0xFF_AA00FF)
+        is GameEvent.DragonTimerWarning -> "🐉" to Color(0xFFAA00FF)
         is GameEvent.ItemSuggestion -> "🛒" to LolColors.Gold
-        is GameEvent.SynergyAdvice -> "🤝" to Color(0xFF_00BFA5)
-        is GameEvent.GenericTip -> "💡" to LolColors.OnSurface.copy(alpha = 0.5f)
-        is GameEvent.AramHealthPackReminder -> "💊" to LolColors.Success
+        is GameEvent.SynergyAdvice -> "🤝" to Color(0xFF00BFA5)
+        is GameEvent.GenericTip -> "💡" to LolColors.Muted
+        is GameEvent.AramHealthPackReminder -> "💊" to LolColors.SuccessGreen
         is GameEvent.AramTeamfightTip -> "⚔️" to LolColors.Gold
         is GameEvent.AramPokeWarning -> "🎯" to LolColors.Danger
         is GameEvent.AramSnowballAdvice -> "❄️" to LolColors.BlueLight
-        is GameEvent.LlmAnalysis -> "🧠" to Color(0xFF_7C4DFF)
-        is GameEvent.UserVoiceQuery -> "🎤" to LolColors.Success
+        is GameEvent.LlmAnalysis -> "🧠" to Color(0xFF7C4DFF)
+        is GameEvent.UserVoiceQuery -> "🎤" to LolColors.BlueLight
     }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(4.dp))
             .background(color.copy(alpha = 0.05f))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(icon, fontSize = 16.sp)
+        Text(icon, fontSize = 14.sp)
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = entry.event.message,
-                color = LolColors.GoldLight,
+                entry.event.message,
+                color = LolColors.OnSurface.copy(alpha = 0.9f),
                 style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = timeStr,
-                color = LolColors.OnSurface.copy(alpha = 0.4f),
-                style = MaterialTheme.typography.labelSmall,
-                fontFamily = FontFamily.Monospace
-            )
         }
+        Text(
+            timeStr,
+            color = LolColors.Muted,
+            style = MaterialTheme.typography.labelSmall,
+            fontFamily = FontFamily.Monospace
+        )
     }
 }
 
@@ -594,30 +451,21 @@ fun LogPanel(
     DashboardCard(modifier = modifier) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             SectionHeader("Logs", "📋")
             Spacer(Modifier.weight(1f))
-
-            // Filter chips
             LogFilterChip("All", selected = selectedLevel == null) { onFilterChanged(null) }
             LogLevel.entries.forEach { level ->
-                LogFilterChip(
-                    level.emoji,
-                    selected = selectedLevel == level
-                ) { onFilterChanged(level) }
+                LogFilterChip(level.emoji, selected = selectedLevel == level) { onFilterChanged(level) }
             }
         }
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(6.dp))
 
         if (logs.isEmpty()) {
-            Text(
-                text = "No logs yet",
-                color = LolColors.OnSurface.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.labelSmall
-            )
+            EmptyState("No logs yet")
         } else {
             val listState = rememberLazyListState()
             LazyColumn(
@@ -626,12 +474,7 @@ fun LogPanel(
                 verticalArrangement = Arrangement.spacedBy(1.dp)
             ) {
                 items(logs) { entry ->
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn()
-                    ) {
-                        LogRow(entry)
-                    }
+                    LogRow(entry)
                 }
             }
         }
@@ -640,22 +483,22 @@ fun LogPanel(
 
 @Composable
 fun LogFilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    val bg = if (selected) LolColors.Gold.copy(alpha = 0.2f) else Color.Transparent
-    val border = if (selected) LolColors.Gold else LolColors.Border
+    val bg = if (selected) LolColors.Gold.copy(alpha = 0.15f) else Color.Transparent
+    val border = if (selected) LolColors.Gold.copy(alpha = 0.4f) else LolColors.Border.copy(alpha = 0.5f)
 
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .border(1.dp, border, RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(3.dp))
+            .border(1.dp, border, RoundedCornerShape(3.dp))
             .background(bg)
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 6.dp, vertical = 3.dp)
     ) {
         Text(
-            text = label,
-            color = if (selected) LolColors.GoldLight else LolColors.OnSurface.copy(alpha = 0.5f),
+            label,
+            color = if (selected) LolColors.GoldLight else LolColors.Muted,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
     }
 }
@@ -663,23 +506,21 @@ fun LogFilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 fun LogRow(entry: LogEntry) {
     val levelColor = when (entry.level) {
-        LogLevel.DEBUG -> LolColors.OnSurface.copy(alpha = 0.4f)
+        LogLevel.DEBUG -> LolColors.Muted
         LogLevel.INFO -> LolColors.BlueLight
         LogLevel.WARN -> LolColors.Gold
         LogLevel.ERROR -> LolColors.Danger
-        LogLevel.EVENT -> LolColors.Success
+        LogLevel.EVENT -> LolColors.SuccessGreen
     }
 
     Text(
-        text = entry.formatted(),
+        entry.formatted(),
         color = levelColor,
         style = MaterialTheme.typography.labelSmall,
         fontFamily = FontFamily.Monospace,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 1.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 1.dp)
     )
 }
 
@@ -701,53 +542,53 @@ fun VoiceSettingsPanel(
     modifier: Modifier = Modifier
 ) {
     DashboardCard(modifier = modifier) {
+        // Enable toggle
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SectionHeader(Strings.VoiceCoaching.uppercase(), "🎙️")
-            DownloadStatusBadge(downloadState, onDownload)
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+            SectionHeader(Strings.VoiceCoaching, "🎙️")
             Switch(
                 checked = enabled,
                 onCheckedChange = onToggle,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = LolColors.Gold,
-                    checkedTrackColor = LolColors.Gold.copy(alpha = 0.5f),
-                    uncheckedThumbColor = LolColors.OnSurface.copy(alpha = 0.3f),
-                    uncheckedTrackColor = LolColors.BlueDeep
+                    checkedTrackColor = LolColors.GoldDark,
+                    uncheckedThumbColor = LolColors.Muted,
+                    uncheckedTrackColor = LolColors.BlueMedium
                 )
             )
-            Column {
-                Text(
-                    text = if (isListening) Strings.Listening else if (enabled) Strings.InGameStatus else Strings.DisconnectedStatus,
-                    color = if (isListening) LolColors.BlueLight else if (enabled) LolColors.Success else LolColors.OnSurface.copy(alpha = 0.5f),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        // Status line
+        val statusText = if (isListening) "🎙️ ${Strings.Listening}" else if (enabled) "✅ Active" else "⏸️ Disabled"
+        val statusColor = if (isListening) LolColors.BlueLight else if (enabled) LolColors.SuccessGreen else LolColors.Muted
+        Text(statusText, style = MaterialTheme.typography.labelSmall, color = statusColor)
 
-        // Wake Word Config
-        Text(
-            text = "Wake Word",
-            color = LolColors.Gold.copy(alpha = 0.7f),
-            style = MaterialTheme.typography.labelSmall
-        )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(Modifier.height(10.dp))
+
+        // Model download
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Vosk Model", style = MaterialTheme.typography.labelSmall, color = LolColors.Muted)
+            DownloadStatusBadge(downloadState, onDownload)
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        // Wake word
+        Text("Wake Word", style = MaterialTheme.typography.labelSmall, color = LolColors.Muted)
+        Spacer(Modifier.height(4.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(4.dp))
                 .background(LolColors.BlueMedium)
+                .border(1.dp, LolColors.Border.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
                 .padding(horizontal = 8.dp, vertical = 6.dp)
         ) {
             BasicTextField(
@@ -759,85 +600,74 @@ fun VoiceSettingsPanel(
                 singleLine = true
             )
             if (wakeWord.isEmpty()) {
-                Text(
-                    text = "e.g. Hey Coach",
-                    color = LolColors.OnSurface.copy(alpha = 0.3f),
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text("e.g. Hey Coach", color = LolColors.Muted, style = MaterialTheme.typography.bodySmall)
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
 
-        // Guide / Instruction Section
-        VoiceGuideSection()
-
-        Spacer(modifier = Modifier.height(12.dp))
-
+        // Microphone selection
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = Strings.Microphone.uppercase(),
-                color = LolColors.Gold.copy(alpha = 0.7f),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
-            )
-            IconButton(onClick = onRefresh, modifier = Modifier.size(24.dp)) {
-                Text("🔄", fontSize = 12.sp)
-            }
+            Text(Strings.Microphone, style = MaterialTheme.typography.labelSmall, color = LolColors.Muted)
+            Text("🔄", fontSize = 12.sp, modifier = Modifier.clickable { onRefresh() })
         }
-        
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(Modifier.height(4.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(LolColors.BlueMedium)
-                    .padding(8.dp)
-            ) {
-                Text(
-                    text = selectedDevice?.name ?: Strings.NoDevices,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (selectedDevice != null) LolColors.OnSurface else LolColors.Danger,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+        // Selected device display
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(4.dp))
+                .background(LolColors.BlueMedium)
+                .border(1.dp, LolColors.Border.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                .padding(8.dp)
+        ) {
+            Text(
+                selectedDevice?.name ?: Strings.NoDevices,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (selectedDevice != null) LolColors.OnSurface else LolColors.Muted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
-        
+
+        // Device list
         if (availableDevices.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .border(1.dp, LolColors.Border, RoundedCornerShape(4.dp))
+                    .clip(RoundedCornerShape(4.dp))
+                    .border(1.dp, LolColors.Border.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
                     .padding(4.dp)
             ) {
                 availableDevices.forEach { device ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clip(RoundedCornerShape(3.dp))
                             .clickable { onDeviceSelected(device) }
-                            .padding(vertical = 2.dp, horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = device.name == selectedDevice?.name,
-                            onClick = { onDeviceSelected(device) },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = LolColors.Gold,
-                                unselectedColor = LolColors.Border
+                            .background(
+                                if (device.name == selectedDevice?.name) LolColors.Gold.copy(alpha = 0.1f)
+                                else Color.Transparent
                             )
+                            .padding(vertical = 4.dp, horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            Modifier.size(8.dp).clip(CircleShape)
+                                .background(
+                                    if (device.name == selectedDevice?.name) LolColors.Gold
+                                    else LolColors.Border
+                                )
                         )
                         Text(
-                            text = device.name,
+                            device.name,
                             style = MaterialTheme.typography.labelSmall,
                             color = if (device.name == selectedDevice?.name) LolColors.GoldLight else LolColors.OnSurface.copy(alpha = 0.6f),
                             maxLines = 1,
@@ -847,6 +677,27 @@ fun VoiceSettingsPanel(
                 }
             }
         }
+
+        // Quick guide (collapsed)
+        Spacer(Modifier.height(10.dp))
+        HorizontalDivider(color = LolColors.Border.copy(alpha = 0.3f), thickness = 1.dp)
+        Spacer(Modifier.height(8.dp))
+        Text("💡 Quick Guide", style = MaterialTheme.typography.labelSmall, color = LolColors.Gold)
+        Spacer(Modifier.height(4.dp))
+        val instructions = listOf(
+            "Enable voice coaching → download model → select mic",
+            "Say your wake word, then ask your question",
+            "The coach will respond via TTS with game-aware advice"
+        )
+        instructions.forEach { text ->
+            Text(
+                "• $text",
+                style = MaterialTheme.typography.labelSmall,
+                color = LolColors.Muted,
+                lineHeight = 14.sp,
+                modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+            )
+        }
     }
 }
 
@@ -854,96 +705,41 @@ fun VoiceSettingsPanel(
 fun DownloadStatusBadge(state: DownloadState, onDownload: () -> Unit) {
     when (state) {
         is DownloadState.Idle -> {
-            Button(
-                onClick = onDownload,
-                colors = ButtonDefaults.buttonColors(containerColor = LolColors.BlueMedium),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                modifier = Modifier.height(28.dp)
-            ) {
-                Text(Strings.DownloadModel, style = MaterialTheme.typography.labelSmall, color = LolColors.GoldLight)
-            }
+            Text(
+                Strings.DownloadModel,
+                style = MaterialTheme.typography.labelSmall,
+                color = LolColors.BlueLight,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(3.dp))
+                    .clickable { onDownload() }
+                    .background(LolColors.BlueLight.copy(alpha = 0.1f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            )
         }
         is DownloadState.Downloading -> {
-            Column(horizontalAlignment = Alignment.End) {
-                Text(Strings.ModelDownloading, style = MaterialTheme.typography.labelSmall, color = LolColors.OnSurface.copy(alpha = 0.5f))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("${(state.progress * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = LolColors.Gold)
                 LinearProgressIndicator(
                     progress = { state.progress },
-                    modifier = Modifier.width(80.dp).height(2.dp).clip(RoundedCornerShape(1.dp)),
+                    modifier = Modifier.width(60.dp).height(3.dp).clip(RoundedCornerShape(2.dp)),
                     color = LolColors.Gold,
                     trackColor = LolColors.Border
                 )
             }
         }
         is DownloadState.Extracting -> {
-            Text(Strings.ModelExtracting, style = MaterialTheme.typography.labelSmall, color = LolColors.BlueLight)
+            Text("⏳ Extracting...", style = MaterialTheme.typography.labelSmall, color = LolColors.BlueLight)
         }
         is DownloadState.Completed -> {
-            Text("✨ ${Strings.ModelReady}", style = MaterialTheme.typography.labelSmall, color = LolColors.Success)
+            Text("✅ Ready", style = MaterialTheme.typography.labelSmall, color = LolColors.SuccessGreen)
         }
         is DownloadState.Error -> {
-            Text("⚠️ ${Strings.ModelError}", style = MaterialTheme.typography.labelSmall, color = LolColors.Danger, modifier = Modifier.clickable { onDownload() })
-        }
-    }
-}
-
-@Composable
-fun VoiceGuideSection() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
-            .background(LolColors.BlueDeep.copy(alpha = 0.4f))
-            .padding(8.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("⚡", fontSize = 12.sp, color = LolColors.Gold)
-            Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = Strings.VoiceSetupGuide.uppercase(),
+                "⚠️ Error — Retry",
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = LolColors.GoldLight
+                color = LolColors.Danger,
+                modifier = Modifier.clickable { onDownload() }
             )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        val instructions = listOf(
-            Strings.VoiceSetupInstruction1,
-            Strings.VoiceSetupInstruction2,
-            Strings.VoiceSetupInstruction3,
-            Strings.VoiceSetupInstruction4
-        )
-        instructions.forEach { instruction ->
-            Row(modifier = Modifier.padding(vertical = 1.dp)) {
-                Text("•", color = LolColors.Gold, modifier = Modifier.padding(end = 4.dp), fontSize = 10.sp)
-                Text(
-                    text = instruction,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = LolColors.OnSurface.copy(alpha = 0.6f),
-                    lineHeight = 14.sp
-                )
-            }
         }
     }
-}
-
-// ─── Card Container ───────────────────────────────────────────
-
-@Composable
-fun DashboardCard(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(LolColors.Surface)
-            .border(
-                width = 1.dp,
-                brush = SolidColor(LolColors.Border),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .padding(14.dp),
-        content = content
-    )
 }
