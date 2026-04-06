@@ -1,5 +1,6 @@
 package com.lolcoach.app.di
 
+import com.lolcoach.app.settings.SettingsRepository
 import com.lolcoach.app.tts.SystemTtsManager
 import com.lolcoach.app.tts.TtsManager
 import com.lolcoach.brain.event.EventProcessor
@@ -14,6 +15,7 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val appModule = module {
+    single { SettingsRepository() }
     single { GameStateMachine() }
     single { StrategyEngine() }
     single { LlmConfig() }

@@ -40,7 +40,7 @@ fun LlmAnalysisPanel(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                items(analyses, key = { it.section }) { analysis ->
+                items(analyses) { analysis ->
                     AnimatedVisibility(visible = true, enter = fadeIn() + expandVertically()) {
                         LlmAnalysisRow(analysis)
                     }

@@ -39,6 +39,7 @@ fun DashboardContent(viewModel: DashboardViewModel) {
     val wakeWord by viewModel.wakeWord.collectAsState()
     val isListening by viewModel.isListeningForQuery.collectAsState()
     val appSettings by viewModel.appSettings.collectAsState()
+    val lastCoachMessage by viewModel.lastCoachMessage.collectAsState()
 
     var sideTabOpen by remember { mutableStateOf<SideTab?>(null) }
 
@@ -51,6 +52,7 @@ fun DashboardContent(viewModel: DashboardViewModel) {
             state = currentState,
             gameMode = currentGameMode,
             isListening = isListening,
+            lastCoachMessage = lastCoachMessage,
             onSettingsClick = { sideTabOpen = if (sideTabOpen == SideTab.SETTINGS) null else SideTab.SETTINGS },
             onLogsClick = { sideTabOpen = if (sideTabOpen == SideTab.LOGS) null else SideTab.LOGS },
             activeSideTab = sideTabOpen
@@ -58,50 +60,45 @@ fun DashboardContent(viewModel: DashboardViewModel) {
 
         // ── Main Content Area ──
         Row(modifier = Modifier.fillMaxSize()) {
-            // Main panels (state-aware)
+            // Main panels — no verticalScroll, panels with LazyColumn use weight()
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 when (currentState) {
                     is GameState.Idle, is GameState.PostGame -> {
-                        // Full overview
                         GameInfoPanel(snapshot = lastSnapshot, modifier = Modifier.fillMaxWidth())
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().weight(1f),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            PlayersPanel(snapshot = lastSnapshot, modifier = Modifier.weight(1f))
-                            LlmAnalysisPanel(analyses = llmAnalysis, modifier = Modifier.weight(1.5f))
+                            PlayersPanel(snapshot = lastSnapshot, modifier = Modifier.weight(1f).fillMaxHeight())
+                            LlmAnalysisPanel(analyses = llmAnalysis, modifier = Modifier.weight(1.5f).fillMaxHeight())
                         }
-                        EventsPanel(events = allEvents, modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 350.dp))
+                        EventsPanel(events = allEvents, modifier = Modifier.fillMaxWidth().weight(0.6f))
                     }
                     is GameState.ChampSelect -> {
-                        // Focus: drafting + LLM analysis
                         PlayersPanel(snapshot = lastSnapshot, modifier = Modifier.fillMaxWidth())
-                        LlmAnalysisPanel(analyses = llmAnalysis, modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp, max = 500.dp))
-                        EventsPanel(events = allEvents, modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 250.dp))
+                        LlmAnalysisPanel(analyses = llmAnalysis, modifier = Modifier.fillMaxWidth().weight(1f))
+                        EventsPanel(events = allEvents, modifier = Modifier.fillMaxWidth().weight(0.5f))
                     }
                     is GameState.Loading -> {
-                        // Focus: macro strategy from LLM
-                        LlmAnalysisPanel(analyses = llmAnalysis, modifier = Modifier.fillMaxWidth().heightIn(min = 300.dp, max = 600.dp))
+                        LlmAnalysisPanel(analyses = llmAnalysis, modifier = Modifier.fillMaxWidth().weight(1f))
                         PlayersPanel(snapshot = lastSnapshot, modifier = Modifier.fillMaxWidth())
                     }
                     is GameState.InGame -> {
-                        // Focus: real-time stats + events
                         GameInfoPanel(snapshot = lastSnapshot, modifier = Modifier.fillMaxWidth())
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().weight(1f),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            PlayersPanel(snapshot = lastSnapshot, modifier = Modifier.weight(1f))
-                            EventsPanel(events = allEvents, modifier = Modifier.weight(1.5f).heightIn(min = 200.dp, max = 400.dp))
+                            PlayersPanel(snapshot = lastSnapshot, modifier = Modifier.weight(1f).fillMaxHeight())
+                            EventsPanel(events = allEvents, modifier = Modifier.weight(1.5f).fillMaxHeight())
                         }
-                        LlmAnalysisPanel(analyses = llmAnalysis, modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp, max = 350.dp))
+                        LlmAnalysisPanel(analyses = llmAnalysis, modifier = Modifier.fillMaxWidth().weight(0.6f))
                     }
                 }
             }
@@ -118,40 +115,48 @@ fun DashboardContent(viewModel: DashboardViewModel) {
                         .fillMaxHeight()
                         .background(LolColors.Surface)
                         .border(width = 1.dp, color = LolColors.BorderGold, shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
-                        .padding(12.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     when (sideTabOpen) {
                         SideTab.SETTINGS -> {
                             SidePanelHeader("Settings", "⚙️") { sideTabOpen = null }
-                            SettingsPanel(
-                                settings = appSettings,
-                                onSettingsChanged = { viewModel.updateAppSettings(it) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            VoiceSettingsPanel(
-                                enabled = voiceEnabled,
-                                onToggle = { viewModel.toggleVoice(it) },
-                                availableDevices = availableDevices,
-                                selectedDevice = selectedDevice,
-                                onDeviceSelected = { viewModel.setVoiceDevice(it) },
-                                onRefresh = { viewModel.refreshDevices() },
-                                downloadState = downloadState,
-                                onDownload = { viewModel.downloadModel() },
-                                wakeWord = wakeWord,
-                                onWakeWordChanged = { viewModel.updateWakeWord(it) },
-                                isListening = isListening,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            // Settings content scrollable (no LazyColumn inside)
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                SettingsPanel(
+                                    settings = appSettings,
+                                    onSettingsChanged = { viewModel.updateAppSettings(it) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                VoiceSettingsPanel(
+                                    enabled = voiceEnabled,
+                                    onToggle = { viewModel.toggleVoice(it) },
+                                    availableDevices = availableDevices,
+                                    selectedDevice = selectedDevice,
+                                    onDeviceSelected = { viewModel.setVoiceDevice(it) },
+                                    onRefresh = { viewModel.refreshDevices() },
+                                    downloadState = downloadState,
+                                    onDownload = { viewModel.downloadModel() },
+                                    wakeWord = wakeWord,
+                                    onWakeWordChanged = { viewModel.updateWakeWord(it) },
+                                    isListening = isListening,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
                         SideTab.LOGS -> {
                             SidePanelHeader("Logs", "📋") { sideTabOpen = null }
+                            // LogPanel has LazyColumn, give bounded height via weight
                             LogPanel(
                                 logs = filteredLogs,
                                 selectedLevel = selectedLogLevel,
                                 onFilterChanged = { viewModel.setLogFilter(it) },
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 400.dp)
+                                modifier = Modifier.fillMaxWidth().weight(1f)
                             )
                         }
                         null -> {}

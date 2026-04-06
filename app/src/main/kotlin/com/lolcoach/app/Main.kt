@@ -16,6 +16,7 @@ import androidx.compose.ui.window.application
 import com.lolcoach.app.di.appModule
 import com.lolcoach.app.di.bridgeModule
 import com.lolcoach.app.logging.AppLogger
+import com.lolcoach.app.settings.SettingsRepository
 import com.lolcoach.app.tts.TtsEventListener
 import com.lolcoach.app.tts.TtsManager
 import com.lolcoach.app.ui.OverlayPanel
@@ -56,6 +57,8 @@ fun main() = application {
         OverlayViewModel(scope, eventProcessor.events, stateMachine.state).also { it.start() }
     }
 
+    val settingsRepository = remember { koin.get<SettingsRepository>() }
+
     val dashboardViewModel = remember {
         DashboardViewModel(
             scope = scope,
@@ -64,7 +67,8 @@ fun main() = application {
             gameModeFlow = stateMachine.gameMode,
             lockfileData = bridge.lockfileData,
             gameSnapshots = bridge.gameSnapshots,
-            modelDownloader = modelDownloader
+            modelDownloader = modelDownloader,
+            settingsRepository = settingsRepository
         ).also { 
             it.start()
             it.refreshDevices()
@@ -84,6 +88,7 @@ fun main() = application {
         scope.launch {
             bridge.gameSnapshots.collect { snapshot ->
                 eventProcessor.processGameSnapshot(snapshot)
+                llmCoachService?.analyzeGameSnapshot(snapshot)
             }
         }
         scope.launch {
@@ -176,12 +181,30 @@ fun main() = application {
     val currentState by viewModel.currentState.collectAsState()
     val overlayGameMode by stateMachine.gameMode.collectAsState()
 
+    // Dynamically size the overlay window to fit content only,
+    // so transparent areas don't capture mouse clicks.
+    val statusBarHeight = 32.dp
+    val eventCardHeight = 42.dp
+    val eventSpacing = 6.dp
+    val padding = 16.dp // top + bottom padding
+    val spacerHeight = 8.dp
+
+    val eventsHeight = if (events.isNotEmpty()) {
+        spacerHeight + (eventCardHeight + eventSpacing) * events.size
+    } else {
+        0.dp
+    }
+    val overlayHeight = statusBarHeight + eventsHeight + padding
+
+    val overlayState = remember { WindowState(
+        size = DpSize(380.dp, overlayHeight),
+        position = WindowPosition(Alignment.TopEnd)
+    ) }
+    overlayState.size = DpSize(380.dp, overlayHeight)
+
     Window(
         onCloseRequest = { /* close only from dashboard */ },
-        state = WindowState(
-            size = DpSize(380.dp, 400.dp),
-            position = WindowPosition(Alignment.TopEnd)
-        ),
+        state = overlayState,
         title = "LoL Coach Overlay",
         transparent = true,
         undecorated = true,
@@ -195,8 +218,10 @@ fun main() = application {
                 horizontalAlignment = Alignment.End
             ) {
                 StatusBar(currentState, overlayGameMode)
-                Spacer(modifier = Modifier.height(8.dp))
-                OverlayPanel(events)
+                if (events.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OverlayPanel(events)
+                }
             }
         }
     }

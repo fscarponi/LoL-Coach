@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.lolcoach.app.i18n.Strings
 import com.lolcoach.app.ui.theme.LolColors
@@ -28,6 +29,7 @@ fun TopStatusBar(
     state: GameState,
     gameMode: GameMode,
     isListening: Boolean,
+    lastCoachMessage: String?,
     onSettingsClick: () -> Unit,
     onLogsClick: () -> Unit,
     activeSideTab: SideTab?
@@ -100,7 +102,31 @@ fun TopStatusBar(
             Text("🎙️ ${Strings.Listening}", style = MaterialTheme.typography.labelSmall, color = LolColors.BlueLight)
         }
 
-        Spacer(Modifier.weight(1f))
+        // Coach feedback in top bar
+        if (lastCoachMessage != null) {
+            Box(Modifier.width(1.dp).height(20.dp).background(LolColors.Border))
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFF7C4DFF).copy(alpha = 0.1f))
+                    .border(1.dp, Color(0xFF7C4DFF).copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("🧠", fontSize = 12.sp)
+                Text(
+                    lastCoachMessage,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFFB388FF),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        } else {
+            Spacer(Modifier.weight(1f))
+        }
 
         // Action buttons
         TopBarButton("⚙️", active = activeSideTab == SideTab.SETTINGS, onClick = onSettingsClick)

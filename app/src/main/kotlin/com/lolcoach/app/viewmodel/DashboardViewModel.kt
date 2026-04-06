@@ -12,6 +12,7 @@ import com.lolcoach.bridge.voice.AudioCaptureProvider
 import com.lolcoach.bridge.voice.DownloadState
 import com.lolcoach.bridge.voice.VoiceDevice
 import com.lolcoach.bridge.voice.VoskModelDownloader
+import com.lolcoach.app.settings.SettingsRepository
 import com.lolcoach.app.ui.dashboard.AppSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
@@ -31,7 +32,8 @@ class DashboardViewModel(
     private val gameModeFlow: StateFlow<GameMode>,
     private val lockfileData: StateFlow<LockfileData?>,
     private val gameSnapshots: SharedFlow<GameSnapshot>,
-    private val modelDownloader: VoskModelDownloader
+    private val modelDownloader: VoskModelDownloader,
+    private val settingsRepository: SettingsRepository = SettingsRepository()
 ) {
     private val _connectionStatus = MutableStateFlow(ConnectionStatus())
     val connectionStatus: StateFlow<ConnectionStatus> = _connectionStatus.asStateFlow()
@@ -48,21 +50,43 @@ class DashboardViewModel(
     private val _llmAnalysis = MutableStateFlow<List<GameEvent.LlmAnalysis>>(emptyList())
     val llmAnalysis: StateFlow<List<GameEvent.LlmAnalysis>> = _llmAnalysis.asStateFlow()
 
+    private val _lastCoachMessage = MutableStateFlow<String?>(null)
+    val lastCoachMessage: StateFlow<String?> = _lastCoachMessage.asStateFlow()
+
     val logs: StateFlow<List<LogEntry>> = AppLogger.logs
 
-    private val _appSettings = MutableStateFlow(AppSettings())
-    val appSettings: StateFlow<AppSettings> = _appSettings.asStateFlow()
+    private val _voiceEnabled: MutableStateFlow<Boolean>
+    private val _wakeWord: MutableStateFlow<String>
+    private val _appSettings: MutableStateFlow<AppSettings>
+    val appSettings: StateFlow<AppSettings>
+
+    init {
+        val persisted = settingsRepository.load()
+        _appSettings = MutableStateFlow(settingsRepository.toAppSettings(persisted))
+        appSettings = _appSettings.asStateFlow()
+        _voiceEnabled = MutableStateFlow(persisted.voiceEnabled)
+        _wakeWord = MutableStateFlow(persisted.wakeWord)
+    }
 
     fun updateAppSettings(settings: AppSettings) {
         _appSettings.value = settings
+        persistSettings()
+    }
+
+    private fun persistSettings() {
+        val persisted = settingsRepository.fromAppSettings(
+            _appSettings.value,
+            _voiceEnabled.value,
+            _wakeWord.value
+        )
+        settingsRepository.save(persisted)
     }
 
     private val _selectedLogLevel = MutableStateFlow<LogLevel?>(null)
     val selectedLogLevel: StateFlow<LogLevel?> = _selectedLogLevel.asStateFlow()
 
-    // Voice Voice settings
-    private val _voiceEnabled = MutableStateFlow(false)
-    val voiceEnabled: StateFlow<Boolean> = _voiceEnabled.asStateFlow()
+    // Voice settings — initialized in init block
+    val voiceEnabled: StateFlow<Boolean> get() = _voiceEnabled.asStateFlow()
 
     private val _availableDevices = MutableStateFlow<List<VoiceDevice>>(emptyList())
     val availableDevices: StateFlow<List<VoiceDevice>> = _availableDevices.asStateFlow()
@@ -83,6 +107,7 @@ class DashboardViewModel(
     fun toggleVoice(enabled: Boolean) {
         _voiceEnabled.value = enabled
         AppLogger.info("Voice", "Voice coaching ${if (enabled) "enabled" else "disabled"}")
+        persistSettings()
     }
 
     fun setVoiceDevice(device: VoiceDevice) {
@@ -94,13 +119,13 @@ class DashboardViewModel(
         _availableDevices.value = AudioCaptureProvider.listDevices()
     }
 
-    private val _wakeWord = MutableStateFlow("hey coach")
-    val wakeWord: StateFlow<String> = _wakeWord.asStateFlow()
+    val wakeWord: StateFlow<String> get() = _wakeWord.asStateFlow()
 
     fun updateWakeWord(newWord: String) {
         if (newWord.isNotBlank()) {
             _wakeWord.value = newWord.lowercase()
             AppLogger.info("Voice", "Wake-word updated to: ${newWord.lowercase()}")
+            persistSettings()
         }
     }
 
@@ -165,6 +190,7 @@ class DashboardViewModel(
                     currentLlm.add(event)
                     if (currentLlm.size > 20) currentLlm.removeAt(0)
                     _llmAnalysis.value = currentLlm
+                    _lastCoachMessage.value = "[${event.section}] ${event.content}"
                 }
             }
         }

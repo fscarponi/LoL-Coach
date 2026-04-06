@@ -12,14 +12,14 @@ import kotlinx.coroutines.isActive
 
 class LockfileMonitor(
     private val lockfilePath: String? = null,
-    private val pollIntervalMs: Long = 2000L
+    private val pollIntervalMs: Long = 3000L
 ) {
     private val _lockfileData = MutableStateFlow<LockfileData?>(null)
     val lockfileData: StateFlow<LockfileData?> = _lockfileData.asStateFlow()
 
     fun monitorFlow(): Flow<LockfileData?> = flow {
-        val path = lockfilePath ?: LockfileReader.findLockfilePath()
         while (currentCoroutineContext().isActive) {
+            val path = lockfilePath ?: LockfileReader.findLockfilePath()
             val data = path?.let { LockfileReader.readFromFile(it) }
             if (data != _lockfileData.value) {
                 _lockfileData.value = data

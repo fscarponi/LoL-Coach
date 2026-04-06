@@ -7,6 +7,7 @@ import com.lolcoach.brain.llm.model.RequestBuilder
 import com.lolcoach.brain.llm.prompt.PromptLoader
 import com.lolcoach.brain.state.GameMode
 import com.lolcoach.model.lcu.ChampSelectSession
+import com.lolcoach.model.liveclient.GameSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -72,9 +73,38 @@ class LlmCoachService(
     }
 
     /**
+     * Analyzes the current in-game state via LLM.
+     * Throttled: avoids re-analyzing if the game time hasn't changed significantly.
+     */
+    private var lastAnalyzedGameTime: Double = -1.0
+
+    fun analyzeGameSnapshot(snapshot: GameSnapshot) {
+        val gameTime = snapshot.gameData?.gameTime ?: return
+        // Only analyze every 60 seconds of game time
+        if (gameTime - lastAnalyzedGameTime < 60.0) return
+        lastAnalyzedGameTime = gameTime
+
+        scope.launch {
+            try {
+                val request = RequestBuilder.fromGameSnapshot(snapshot, currentGameMode)
+                val userPrompt = RequestBuilder.toUserPrompt(request)
+                val systemPrompt = buildSystemPrompt(currentGameMode)
+                val rawResponse = llmProvider.chat(systemPrompt, userPrompt)
+                val response = parseResponse(rawResponse)
+                emitAnalysis(response)
+            } catch (e: Exception) {
+                _analysisEvents.emit(
+                    GameEvent.LlmAnalysis("ERROR", "LLM analysis failed: ${e.message?.take(80)}")
+                )
+            }
+        }
+    }
+
+    /**
      * Reset for a new game.
      */
     fun reset() {
+        lastAnalyzedGameTime = -1.0
         lastAnalyzedSession = ""
     }
 

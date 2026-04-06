@@ -1,6 +1,7 @@
 package com.lolcoach.app.viewmodel
 
 import com.lolcoach.app.logging.LogLevel
+import com.lolcoach.app.settings.SettingsRepository
 import com.lolcoach.brain.event.GameEvent
 import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
@@ -39,6 +40,8 @@ class DashboardViewModelTest {
         gameSnapshots: MutableSharedFlow<GameSnapshot>
     ): DashboardViewModel {
         val modelDownloader = VoskModelDownloader("/tmp/test-vosk-model-nonexistent")
+        val tempFile = java.io.File.createTempFile("lolcoach-test-settings-", ".json").also { it.delete() }
+        val settingsRepo = SettingsRepository(tempFile.absolutePath)
         return DashboardViewModel(
             scope = scope,
             gameEvents = gameEvents,
@@ -46,7 +49,8 @@ class DashboardViewModelTest {
             gameModeFlow = gameModeFlow,
             lockfileData = lockfileData,
             gameSnapshots = gameSnapshots,
-            modelDownloader = modelDownloader
+            modelDownloader = modelDownloader,
+            settingsRepository = settingsRepo
         ).also { it.start() }
     }
 
