@@ -10,6 +10,8 @@ data class ActivePlayer(
     @SerialName("currentGold") val currentGold: Double = 0.0,
     @SerialName("fullRunes") val fullRunes: FullRunes? = null,
     @SerialName("level") val level: Int = 1,
+    @SerialName("currentExp") val currentExp: Double = 0.0,
+    @SerialName("neededExp") val neededExp: Double = 0.0,
     @SerialName("summonerName") val summonerName: String = "",
     @SerialName("riotId") val riotId: String = "",
     @SerialName("teamRelativeColors") val teamRelativeColors: Boolean = false

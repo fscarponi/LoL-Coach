@@ -61,26 +61,81 @@ fun SectionHeader(title: String, emoji: String) {
 }
 
 @Composable
-fun ConnectionPanel(status: ConnectionStatus, modifier: Modifier = Modifier) {
-    DashboardCard(modifier = modifier) {
-        SectionHeader(Strings.Connection.uppercase(), "🔌")
+fun ConnectionAndStatePanel(
+    status: ConnectionStatus,
+    state: GameState,
+    gameMode: GameMode = GameMode.UNKNOWN,
+    modifier: Modifier = Modifier
+) {
+    val (stateName, stateColor, stateEmoji) = when (state) {
+        is GameState.Idle -> Triple(Strings.Idle, LolColors.Danger, "⏸️")
+        is GameState.ChampSelect -> Triple(Strings.ChampSelect, LolColors.Gold, "🎮")
+        is GameState.Loading -> Triple(Strings.Loading, LolColors.GoldLight, "⏳")
+        is GameState.InGame -> Triple(Strings.InGame, LolColors.Success, "⚔️")
+        is GameState.PostGame -> Triple(Strings.PostGame, LolColors.OnSurface.copy(alpha = 0.5f), "🏁")
+    }
 
-        StatusRow(
-            label = Strings.Lockfile,
-            active = status.lockfileFound,
-            detail = if (status.lockfileFound) "Port ${status.lockfilePort}" else Strings.NotFound
-        )
-        Spacer(Modifier.height(4.dp))
-        StatusRow(
-            label = Strings.LiveClient,
-            active = status.liveClientActive,
-            detail = if (status.liveClientActive) {
-                status.lastSnapshotTime?.let {
-                    val ago = (System.currentTimeMillis() - it) / 1000
-                    Strings.lastSnapshot(ago)
-                } ?: Strings.Connected
-            } else Strings.NotActive
-        )
+    val modeColor = when (gameMode) {
+        GameMode.SUMMONERS_RIFT -> LolColors.BlueLight
+        GameMode.ARAM -> LolColors.Gold
+        GameMode.ARAM_MAYHEM -> Color(0xFF_FF4081)
+        GameMode.UNKNOWN -> LolColors.OnSurface.copy(alpha = 0.5f)
+    }
+
+    DashboardCard(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SectionHeader(Strings.Connection.uppercase(), "🔌")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stateEmoji, fontSize = 16.sp)
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = stateName,
+                    color = stateColor,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
+                StatusRow(
+                    label = Strings.Lockfile,
+                    active = status.lockfileFound,
+                    detail = if (status.lockfileFound) "Port ${status.lockfilePort}" else Strings.NotFound
+                )
+                Spacer(Modifier.height(4.dp))
+                StatusRow(
+                    label = Strings.LiveClient,
+                    active = status.liveClientActive,
+                    detail = if (status.liveClientActive) {
+                        status.lastSnapshotTime?.let {
+                            val ago = (System.currentTimeMillis() - it) / 1000
+                            Strings.lastSnapshot(ago)
+                        } ?: Strings.Connected
+                    } else Strings.NotActive
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🗺️", fontSize = 12.sp)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = gameMode.displayName,
+                        color = modeColor,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -168,16 +223,44 @@ fun GameInfoPanel(snapshot: GameSnapshot?, modifier: Modifier = Modifier) {
             val ap = snapshot.activePlayer!!
             val gd = snapshot.gameData
 
-            InfoRow("Summoner", ap.summonerName.ifEmpty { ap.riotId })
-            InfoRow("Level", "${ap.level}")
-            InfoRow("Gold", "%.0f".format(ap.currentGold))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    InfoRow("Summoner", ap.summonerName.ifEmpty { ap.riotId })
+                    InfoRow("Gold", "%.0f".format(ap.currentGold))
+                    if (gd != null) {
+                        val minutes = (gd.gameTime / 60).toInt()
+                        val seconds = (gd.gameTime % 60).toInt()
+                        InfoRow("Time", "%d:%02d".format(minutes, seconds))
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    InfoRow("Level", "${ap.level}")
+                    if (ap.neededExp > 0) {
+                        val progress = ap.currentExp / ap.neededExp
+                        LinearProgressIndicator(
+                            progress = { progress.toFloat() },
+                            modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                            color = LolColors.BlueLight,
+                            trackColor = LolColors.BlueMedium
+                        )
+                        Text(
+                            text = "EXP: %.0f / %.0f".format(ap.currentExp, ap.neededExp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = LolColors.OnSurface.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
 
             if (gd != null) {
-                val minutes = (gd.gameTime / 60).toInt()
-                val seconds = (gd.gameTime % 60).toInt()
-                InfoRow("Time", "%d:%02d".format(minutes, seconds))
-                InfoRow("Mode", gd.gameMode)
-                InfoRow("Map", gd.mapName.ifEmpty { "Map ${gd.mapNumber}" })
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        InfoRow("Mode", gd.gameMode)
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        InfoRow("Map", gd.mapName.ifEmpty { "Map ${gd.mapNumber}" })
+                    }
+                }
             }
 
             ap.championStats?.let { stats ->
@@ -259,7 +342,7 @@ fun PlayersPanel(snapshot: GameSnapshot?, modifier: Modifier = Modifier) {
                 )
                 Spacer(Modifier.height(4.dp))
                 allies.forEach { player ->
-                    PlayerRow(player.championName, player.position, player.scores, Color(0xFF_58A6FF))
+                    PlayerRow(player.championName, player.position, player.scores, Color(0xFF_58A6FF), player.level)
                 }
             }
             if (enemies.isNotEmpty()) {
@@ -272,7 +355,7 @@ fun PlayersPanel(snapshot: GameSnapshot?, modifier: Modifier = Modifier) {
                 )
                 Spacer(Modifier.height(4.dp))
                 enemies.forEach { player ->
-                    PlayerRow(player.championName, player.position, player.scores, LolColors.Danger)
+                    PlayerRow(player.championName, player.position, player.scores, LolColors.Danger, player.level)
                 }
             }
         }
@@ -284,7 +367,8 @@ fun PlayerRow(
     champion: String,
     position: String,
     scores: com.lolcoach.bridge.model.liveclient.PlayerScores?,
-    teamColor: Color
+    teamColor: Color,
+    level: Int = 1
 ) {
     Row(
         modifier = Modifier
@@ -302,14 +386,21 @@ fun PlayerRow(
                 .background(teamColor)
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                champion.ifEmpty { "?" },
-                color = LolColors.GoldLight,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    champion.ifEmpty { "?" },
+                    color = LolColors.GoldLight,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    "Lvl $level",
+                    color = LolColors.OnSurface.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
             Text(
                 position.ifEmpty { "—" }.lowercase(),
                 color = LolColors.OnSurface.copy(alpha = 0.5f),

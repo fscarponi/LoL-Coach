@@ -44,11 +44,8 @@ fun DashboardContent(viewModel: DashboardViewModel) {
                 modifier = Modifier.fillMaxWidth().height(320.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ConnectionPanel(
+                ConnectionAndStatePanel(
                     status = connectionStatus,
-                    modifier = Modifier.weight(1f).fillMaxHeight()
-                )
-                GameStatePanel(
                     state = currentState,
                     gameMode = currentGameMode,
                     modifier = Modifier.weight(1f).fillMaxHeight()
@@ -65,7 +62,7 @@ fun DashboardContent(viewModel: DashboardViewModel) {
                     wakeWord = viewModel.wakeWord.collectAsState().value,
                     onWakeWordChanged = { viewModel.updateWakeWord(it) },
                     isListening = viewModel.isListeningForQuery.collectAsState().value,
-                    modifier = Modifier.weight(1.5f).fillMaxHeight()
+                    modifier = Modifier.weight(1f).fillMaxHeight()
                 )
             }
 
@@ -76,11 +73,11 @@ fun DashboardContent(viewModel: DashboardViewModel) {
             ) {
                 GameInfoPanel(
                     snapshot = lastSnapshot,
-                    modifier = Modifier.weight(1f).fillMaxHeight()
+                    modifier = Modifier.weight(1.5f).fillMaxHeight()
                 )
                 LlmAnalysisPanel(
                     analyses = llmAnalysis,
-                    modifier = Modifier.weight(2.5f).fillMaxHeight()
+                    modifier = Modifier.weight(2f).fillMaxHeight()
                 )
             }
 

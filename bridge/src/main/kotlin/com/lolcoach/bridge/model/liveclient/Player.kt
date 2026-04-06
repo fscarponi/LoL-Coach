@@ -10,6 +10,8 @@ data class Player(
     @SerialName("isDead") val isDead: Boolean = false,
     @SerialName("items") val items: List<PlayerItem> = emptyList(),
     @SerialName("level") val level: Int = 1,
+    @SerialName("currentExp") val currentExp: Double = 0.0,
+    @SerialName("neededExp") val neededExp: Double = 0.0,
     @SerialName("position") val position: String = "",
     @SerialName("rawChampionName") val rawChampionName: String = "",
     @SerialName("rawSkinName") val rawSkinName: String = "",
