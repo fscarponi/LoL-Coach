@@ -5,7 +5,7 @@ ktor = "3.1.1"
 coroutines = "1.10.1"
 serialization = "1.8.0"
 logback = "1.5.16"
-vosk = "0.3.45"
+vosk = "0.3.38"
 jna = "5.16.0"
 
 [libraries]

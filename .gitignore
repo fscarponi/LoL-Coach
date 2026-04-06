@@ -50,3 +50,4 @@ Desktop.ini
 
 # ── Logs ──
 *.log
+/app/models/vosk-model/

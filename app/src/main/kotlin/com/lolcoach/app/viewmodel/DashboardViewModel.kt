@@ -86,6 +86,23 @@ class DashboardViewModel(
         _availableDevices.value = AudioCaptureProvider.listDevices()
     }
 
+    private val _wakeWord = MutableStateFlow("hey coach")
+    val wakeWord: StateFlow<String> = _wakeWord.asStateFlow()
+
+    fun updateWakeWord(newWord: String) {
+        if (newWord.isNotBlank()) {
+            _wakeWord.value = newWord.lowercase()
+            AppLogger.info("Voice", "Wake-word updated to: ${newWord.lowercase()}")
+        }
+    }
+
+    private val _isListeningForQuery = MutableStateFlow(false)
+    val isListeningForQuery: StateFlow<Boolean> = _isListeningForQuery.asStateFlow()
+
+    fun setIsListening(listening: Boolean) {
+        _isListeningForQuery.value = listening
+    }
+
     val filteredLogs: StateFlow<List<LogEntry>> = combine(logs, _selectedLogLevel) { allLogs, level ->
         if (level == null) allLogs else allLogs.filter { it.level == level }
     }.stateIn(scope, SharingStarted.Eagerly, emptyList())

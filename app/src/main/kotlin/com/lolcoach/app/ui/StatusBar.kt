@@ -4,28 +4,28 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.lolcoach.app.i18n.Strings
+import com.lolcoach.app.ui.theme.LolColors
 import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 
 @Composable
-fun StatusBar(state: GameState, gameMode: GameMode = GameMode.UNKNOWN, barAlpha: Float = 0.85f) {
+fun StatusBar(state: GameState, gameMode: GameMode = GameMode.UNKNOWN, barAlpha: Float = 0.9f) {
     val (statusText, statusColor) = when (state) {
-        is GameState.Idle -> Strings.DisconnectedStatus to Color(0xFF_F44336)
-        is GameState.ChampSelect -> Strings.ChampSelect to Color(0xFF_FF9800)
-        is GameState.Loading -> Strings.LoadingStatus to Color(0xFF_FFC107)
-        is GameState.InGame -> Strings.InGameStatus to Color(0xFF_4CAF50)
-        is GameState.PostGame -> Strings.PostGameStatus to Color(0xFF_9E9E9E)
+        is GameState.Idle -> Strings.DisconnectedStatus to LolColors.Danger
+        is GameState.ChampSelect -> Strings.ChampSelect to LolColors.Gold
+        is GameState.Loading -> Strings.LoadingStatus to LolColors.GoldLight
+        is GameState.InGame -> Strings.InGameStatus to LolColors.Success
+        is GameState.PostGame -> Strings.PostGameStatus to LolColors.OnSurface.copy(alpha = 0.5f)
     }
 
     val modeLabel = if (gameMode != GameMode.UNKNOWN) " · ${gameMode.displayName}" else ""
@@ -33,23 +33,23 @@ fun StatusBar(state: GameState, gameMode: GameMode = GameMode.UNKNOWN, barAlpha:
     Row(
         modifier = Modifier
             .alpha(barAlpha)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xAA_1A1A2E))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .clip(RoundedCornerShape(6.dp))
+            .background(LolColors.BlueDeep.copy(alpha = 0.8f))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(8.dp)
+                .size(6.dp)
                 .clip(CircleShape)
                 .background(statusColor)
         )
         Text(
             text = "LoL Coach · $statusText$modeLabel",
-            color = Color.White,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.SemiBold
+            color = LolColors.GoldLight,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
         )
     }
 }

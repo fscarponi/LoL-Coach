@@ -1,8 +1,6 @@
 package com.lolcoach.app
 
 import androidx.compose.foundation.layout.*
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -16,9 +14,12 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import com.lolcoach.app.logging.AppLogger
+import com.lolcoach.app.tts.SystemTtsManager
+import com.lolcoach.app.tts.TtsEventListener
 import com.lolcoach.app.ui.OverlayPanel
 import com.lolcoach.app.ui.StatusBar
 import com.lolcoach.app.ui.dashboard.DashboardContent
+import com.lolcoach.app.ui.theme.LolCoachTheme
 import com.lolcoach.app.viewmodel.DashboardViewModel
 import com.lolcoach.app.viewmodel.OverlayViewModel
 import com.lolcoach.brain.event.EventProcessor
@@ -26,12 +27,11 @@ import com.lolcoach.brain.llm.LlmCoachService
 import com.lolcoach.brain.llm.LlmConfig
 import com.lolcoach.brain.state.GameStateMachine
 import com.lolcoach.brain.strategy.StrategyEngine
-import com.lolcoach.app.tts.SystemTtsManager
-import com.lolcoach.app.tts.TtsEventListener
 import com.lolcoach.bridge.BridgeFacade
 import com.lolcoach.bridge.voice.VoskModelDownloader
 import com.lolcoach.bridge.voice.WakeWordDetector
-import java.io.File
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 
 fun main() = application {
     val scope = rememberCoroutineScope()
@@ -123,11 +123,16 @@ fun main() = application {
 
         // Voice Coaching logic
         scope.launch {
-            combine(dashboardViewModel.voiceEnabled, dashboardViewModel.selectedDevice) { enabled, device ->
-                enabled to device
-            }.collect { (enabled, device) ->
+            combine(
+                dashboardViewModel.voiceEnabled,
+                dashboardViewModel.selectedDevice,
+                dashboardViewModel.wakeWord
+            ) { enabled, device, wakeWord ->
+                Triple(enabled, device, wakeWord)
+            }.collect { (enabled, device, wakeWord) ->
                 if (enabled) {
-                    AppLogger.info("Voice", "Starting wake-word detector...")
+                    AppLogger.info("Voice", "Starting wake-word detector with phrase: '$wakeWord'...")
+                    wakeWordDetector.setWakeWord(wakeWord)
                     wakeWordDetector.start(device)
                 } else {
                     wakeWordDetector.stop()
@@ -138,9 +143,19 @@ fun main() = application {
         scope.launch {
             wakeWordDetector.onWakeWordDetected.collect {
                 AppLogger.event("Voice", "Wake-word detected! Listening for query...")
-                // For now, we simulate a query for testing, or we would start recording STT
-                // In a real implementation, we would start AudioBufferRecorder and send to Gemini STT
-                llmCoachService?.askCoach("What should I do now?") 
+            }
+        }
+
+        scope.launch {
+            wakeWordDetector.isListeningForQuery.collect { listening ->
+                dashboardViewModel.setIsListening(listening)
+            }
+        }
+
+        scope.launch {
+            wakeWordDetector.onQueryTranscribed.collect { query ->
+                AppLogger.event("Voice", "Query transcribed: \"$query\"")
+                llmCoachService?.askCoach(query)
             }
         }
     }
@@ -159,7 +174,9 @@ fun main() = application {
         title = "LoL Support Strategist — Dashboard",
         resizable = true
     ) {
-        DashboardContent(dashboardViewModel)
+        LolCoachTheme {
+            DashboardContent(dashboardViewModel)
+        }
     }
 
     // ── Overlay Window (compact, always on top) ──
@@ -180,13 +197,15 @@ fun main() = application {
         focusable = false,
         resizable = false
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(8.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            StatusBar(currentState, overlayGameMode)
-            Spacer(modifier = Modifier.height(8.dp))
-            OverlayPanel(events)
+        LolCoachTheme {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(8.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                StatusBar(currentState, overlayGameMode)
+                Spacer(modifier = Modifier.height(8.dp))
+                OverlayPanel(events)
+            }
         }
     }
 }
