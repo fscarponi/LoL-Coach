@@ -27,7 +27,9 @@ class WakeWordDetector(
     fun start(device: VoiceDevice? = null) {
         stop()
         
-        if (!File(modelPath).exists()) {
+        // Find the actual model directory (Vosk expects a folder containing am, conf, ivector etc)
+        val actualModelPath = findModelPath(modelPath)
+        if (actualModelPath == null) {
             println("[ERROR] Vosk model not found at $modelPath")
             return
         }
@@ -35,7 +37,7 @@ class WakeWordDetector(
         job = scope.launch(Dispatchers.IO) {
             try {
                 if (model == null) {
-                    model = Model(modelPath)
+                    model = Model(actualModelPath)
                 }
                 
                 // Configurazione recognizer per la wake word specifica
@@ -78,5 +80,24 @@ class WakeWordDetector(
         line = null
         recognizer?.close()
         recognizer = null
+    }
+
+    private fun findModelPath(path: String): String? {
+        val root = File(path)
+        if (!root.exists()) return null
+        
+        // If it's a valid model dir directly (contains 'am' or 'conf')
+        if (File(root, "am").exists() || File(root, "conf").exists()) {
+            return root.absolutePath
+        }
+        
+        // Check subdirectories (Vosk zip often extracts into a subfolder)
+        root.listFiles()?.filter { it.isDirectory }?.forEach { sub ->
+            if (File(sub, "am").exists() || File(sub, "conf").exists()) {
+                return sub.absolutePath
+            }
+        }
+        
+        return null
     }
 }

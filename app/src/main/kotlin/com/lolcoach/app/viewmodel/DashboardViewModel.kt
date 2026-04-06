@@ -9,7 +9,9 @@ import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.LockfileData
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
 import com.lolcoach.bridge.voice.AudioCaptureProvider
+import com.lolcoach.bridge.voice.DownloadState
 import com.lolcoach.bridge.voice.VoiceDevice
+import com.lolcoach.bridge.voice.VoskModelDownloader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -27,7 +29,8 @@ class DashboardViewModel(
     private val gameState: StateFlow<GameState>,
     private val gameModeFlow: StateFlow<GameMode>,
     private val lockfileData: StateFlow<LockfileData?>,
-    private val gameSnapshots: SharedFlow<GameSnapshot>
+    private val gameSnapshots: SharedFlow<GameSnapshot>,
+    private val modelDownloader: VoskModelDownloader
 ) {
     private val _connectionStatus = MutableStateFlow(ConnectionStatus())
     val connectionStatus: StateFlow<ConnectionStatus> = _connectionStatus.asStateFlow()
@@ -58,6 +61,16 @@ class DashboardViewModel(
 
     private val _selectedDevice = MutableStateFlow<VoiceDevice?>(null)
     val selectedDevice: StateFlow<VoiceDevice?> = _selectedDevice.asStateFlow()
+
+    val modelDownloadState: StateFlow<DownloadState> = modelDownloader.downloadState
+
+    fun downloadModel() {
+        scope.launch {
+            modelDownloader.downloadAndExtract()
+        }
+    }
+
+    fun isModelPresent(): Boolean = modelDownloader.isModelPresent()
 
     fun toggleVoice(enabled: Boolean) {
         _voiceEnabled.value = enabled

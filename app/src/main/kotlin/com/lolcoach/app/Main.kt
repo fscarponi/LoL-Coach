@@ -29,6 +29,7 @@ import com.lolcoach.brain.strategy.StrategyEngine
 import com.lolcoach.app.tts.SystemTtsManager
 import com.lolcoach.app.tts.TtsEventListener
 import com.lolcoach.bridge.BridgeFacade
+import com.lolcoach.bridge.voice.VoskModelDownloader
 import com.lolcoach.bridge.voice.WakeWordDetector
 import java.io.File
 
@@ -41,6 +42,11 @@ fun main() = application {
         EventProcessor(scope, stateMachine, strategyEngine.allStrategies())
     }
     val bridge = remember { BridgeFacade(scope) }
+
+    val modelPath = remember {
+        System.getenv("VOSK_MODEL_PATH") ?: "models/vosk-model"
+    }
+    val modelDownloader = remember { VoskModelDownloader(modelPath) }
 
     // LLM Coach Service
     val llmConfig = remember { LlmConfig() }
@@ -61,7 +67,8 @@ fun main() = application {
             gameState = stateMachine.state,
             gameModeFlow = stateMachine.gameMode,
             lockfileData = bridge.lockfileData,
-            gameSnapshots = bridge.gameSnapshots
+            gameSnapshots = bridge.gameSnapshots,
+            modelDownloader = modelDownloader
         ).also { 
             it.start()
             it.refreshDevices()
@@ -69,7 +76,7 @@ fun main() = application {
     }
 
     val wakeWordDetector = remember {
-        val modelPath = System.getenv("VOSK_MODEL_PATH") ?: "models/vosk-model-small-en-us"
+        // Points to the root dir, Vosk will find the model inside
         WakeWordDetector(scope, modelPath)
     }
 

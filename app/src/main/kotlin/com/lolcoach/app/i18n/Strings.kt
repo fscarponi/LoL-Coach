@@ -29,4 +29,17 @@ object Strings {
     const val Refresh = "Refresh"
     const val Listening = "Listening..."
     const val Thinking = "Thinking..."
+    
+    const val VoskModelMissing = "Vosk model missing"
+    const val DownloadModel = "Download Model (~40MB)"
+    const val ModelDownloading = "Downloading model..."
+    const val ModelExtracting = "Extracting..."
+    const val ModelReady = "Model ready"
+    const val ModelError = "Error downloading model"
+    
+    const val VoiceSetupGuide = "Setup Guide"
+    const val VoiceSetupInstruction1 = "1. Enable Voice Coaching above"
+    const val VoiceSetupInstruction2 = "2. Download the Vosk model if not present"
+    const val VoiceSetupInstruction3 = "3. Select your preferred microphone"
+    const val VoiceSetupInstruction4 = "4. Say 'Ehy Coach' followed by your question"
 }

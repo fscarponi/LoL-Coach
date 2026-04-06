@@ -39,6 +39,7 @@ fun DashboardContent(viewModel: DashboardViewModel) {
     val voiceEnabled by viewModel.voiceEnabled.collectAsState()
     val availableDevices by viewModel.availableDevices.collectAsState()
     val selectedDevice by viewModel.selectedDevice.collectAsState()
+    val downloadState by viewModel.modelDownloadState.collectAsState()
 
     MaterialTheme(
         colorScheme = darkColorScheme(
@@ -82,6 +83,8 @@ fun DashboardContent(viewModel: DashboardViewModel) {
                         selectedDevice = selectedDevice,
                         onDeviceSelected = { viewModel.setVoiceDevice(it) },
                         onRefresh = { viewModel.refreshDevices() },
+                        downloadState = downloadState,
+                        onDownload = { viewModel.downloadModel() },
                         modifier = Modifier.weight(1.5f).fillMaxHeight()
                     )
                 }

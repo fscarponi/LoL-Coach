@@ -27,6 +27,7 @@ import com.lolcoach.brain.event.GameEvent
 import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.bridge.voice.DownloadState
 import com.lolcoach.bridge.voice.VoiceDevice
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -508,28 +509,44 @@ fun VoiceSettingsPanel(
     selectedDevice: VoiceDevice?,
     onDeviceSelected: (VoiceDevice) -> Unit,
     onRefresh: () -> Unit,
+    downloadState: DownloadState,
+    onDownload: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     DashboardCard(modifier = modifier) {
         SectionHeader(Strings.VoiceCoaching, "🎙️")
         Spacer(modifier = Modifier.height(8.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(
-                checked = enabled,
-                onCheckedChange = onToggle,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = AccentGreen,
-                    checkedTrackColor = AccentGreen.copy(alpha = 0.5f)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = onToggle,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = AccentGreen,
+                        checkedTrackColor = AccentGreen.copy(alpha = 0.5f)
+                    )
                 )
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = Strings.EhyCoach,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (enabled) AccentGreen else TextSecondary
-            )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = Strings.EhyCoach,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (enabled) AccentGreen else TextSecondary
+                )
+            }
+
+            // Status Badge for Download
+            DownloadStatusBadge(downloadState, onDownload)
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Guide / Instruction Section
+        VoiceGuideSection()
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -592,6 +609,86 @@ fun VoiceSettingsPanel(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun DownloadStatusBadge(state: DownloadState, onDownload: () -> Unit) {
+    when (state) {
+        is DownloadState.Idle -> {
+            Button(
+                onClick = onDownload,
+                colors = ButtonDefaults.buttonColors(containerColor = BackgroundSecondary),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                modifier = Modifier.height(32.dp)
+            ) {
+                Text(Strings.DownloadModel, style = MaterialTheme.typography.labelSmall, color = AccentGreen)
+            }
+        }
+        is DownloadState.Downloading -> {
+            Column(horizontalAlignment = Alignment.End) {
+                Text(Strings.ModelDownloading, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                LinearProgressIndicator(
+                    progress = state.progress,
+                    modifier = Modifier.width(100.dp).height(4.dp).clip(RoundedCornerShape(2.dp)),
+                    color = AccentGreen,
+                    trackColor = BorderColor
+                )
+            }
+        }
+        is DownloadState.Extracting -> {
+            Text(Strings.ModelExtracting, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+        }
+        is DownloadState.Completed -> {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("✅", fontSize = 12.sp)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(Strings.ModelReady, style = MaterialTheme.typography.labelSmall, color = AccentGreen)
+            }
+        }
+        is DownloadState.Error -> {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onDownload() }) {
+                Text("⚠️", fontSize = 12.sp)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(Strings.ModelError, style = MaterialTheme.typography.labelSmall, color = AccentRed)
+            }
+        }
+    }
+}
+
+@Composable
+fun VoiceGuideSection() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .background(BackgroundSecondary.copy(alpha = 0.5f))
+            .padding(8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("ℹ️", fontSize = 14.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = Strings.VoiceSetupGuide,
+                style = MaterialTheme.typography.labelLarge,
+                color = TextPrimary
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        val instructions = listOf(
+            Strings.VoiceSetupInstruction1,
+            Strings.VoiceSetupInstruction2,
+            Strings.VoiceSetupInstruction3,
+            Strings.VoiceSetupInstruction4
+        )
+        instructions.forEach { instruction ->
+            Text(
+                text = instruction,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                modifier = Modifier.padding(vertical = 1.dp, horizontal = 4.dp)
+            )
         }
     }
 }
