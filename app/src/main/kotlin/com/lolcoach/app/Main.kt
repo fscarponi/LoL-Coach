@@ -56,6 +56,7 @@ fun main() = application {
             scope = scope,
             gameEvents = eventProcessor.events,
             gameState = stateMachine.state,
+            gameModeFlow = stateMachine.gameMode,
             lockfileData = bridge.lockfileData,
             gameSnapshots = bridge.gameSnapshots
         ).also { it.start() }
@@ -89,6 +90,12 @@ fun main() = application {
                     eventProcessor.emitEvent(event)
                 }
             }
+            // Sync game mode to LLM coach
+            scope.launch {
+                stateMachine.gameMode.collect { mode ->
+                    llmCoachService.setGameMode(mode)
+                }
+            }
         }
         scope.launch {
             bridge.lockfileData.collect { data ->
@@ -117,6 +124,7 @@ fun main() = application {
     // ── Overlay Window (compact, always on top) ──
     val events by viewModel.visibleEvents.collectAsState()
     val currentState by viewModel.currentState.collectAsState()
+    val overlayGameMode by stateMachine.gameMode.collectAsState()
 
     Window(
         onCloseRequest = { /* chiudi solo dalla dashboard */ },
@@ -135,7 +143,7 @@ fun main() = application {
             modifier = Modifier.fillMaxSize().padding(8.dp),
             horizontalAlignment = Alignment.End
         ) {
-            StatusBar(currentState)
+            StatusBar(currentState, overlayGameMode)
             Spacer(modifier = Modifier.height(8.dp))
             OverlayPanel(events)
         }

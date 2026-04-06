@@ -2,10 +2,13 @@ package com.lolcoach.brain.strategy
 
 import com.lolcoach.brain.event.GameEvent
 import com.lolcoach.brain.event.Strategy
+import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
 
 class VisionMacroStrategy : Strategy {
+
+    override val applicableGameModes = setOf(GameMode.SUMMONERS_RIFT)
 
     companion object {
         const val WARD_REMINDER_TIME_THRESHOLD = 600.0 // 10 minutes

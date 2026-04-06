@@ -23,6 +23,7 @@ import com.lolcoach.app.logging.LogLevel
 import com.lolcoach.app.viewmodel.ConnectionStatus
 import com.lolcoach.app.viewmodel.DashboardViewModel
 import com.lolcoach.brain.event.GameEvent
+import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
 import java.text.SimpleDateFormat
@@ -96,13 +97,20 @@ fun StatusRow(label: String, active: Boolean, detail: String) {
 // ─── Game State Panel ─────────────────────────────────────────
 
 @Composable
-fun GameStatePanel(state: GameState) {
+fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN) {
     val (stateName, stateColor, stateEmoji) = when (state) {
         is GameState.Idle -> Triple("IDLE — Disconnesso", AccentRed, "⏸️")
         is GameState.ChampSelect -> Triple("CHAMPION SELECT", AccentOrange, "🎮")
         is GameState.Loading -> Triple("CARICAMENTO", Color(0xFF_FFC107), "⏳")
         is GameState.InGame -> Triple("IN PARTITA", AccentGreen, "⚔️")
         is GameState.PostGame -> Triple("FINE PARTITA", TextSecondary, "🏁")
+    }
+
+    val modeColor = when (gameMode) {
+        GameMode.SUMMONERS_RIFT -> AccentBlue
+        GameMode.ARAM -> AccentOrange
+        GameMode.ARAM_MAYHEM -> Color(0xFF_FF4081)
+        GameMode.UNKNOWN -> TextSecondary
     }
 
     DashboardCard {
@@ -117,6 +125,19 @@ fun GameStatePanel(state: GameState) {
                 color = stateColor,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text("🗺️", fontSize = 12.sp)
+            Text(
+                text = gameMode.displayName,
+                color = modeColor,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
             )
         }
     }
@@ -361,6 +382,10 @@ fun EventRow(entry: DashboardViewModel.TimestampedGameEvent) {
         is GameEvent.ItemSuggestion -> "🛒" to AccentOrange
         is GameEvent.SynergyAdvice -> "🤝" to Color(0xFF_00BFA5)
         is GameEvent.GenericTip -> "💡" to TextSecondary
+        is GameEvent.AramHealthPackReminder -> "💊" to AccentGreen
+        is GameEvent.AramTeamfightTip -> "⚔️" to AccentOrange
+        is GameEvent.AramPokeWarning -> "🎯" to AccentRed
+        is GameEvent.AramSnowballAdvice -> "❄️" to AccentBlue
         is GameEvent.LlmAnalysis -> "🧠" to Color(0xFF_7C4DFF)
     }
 

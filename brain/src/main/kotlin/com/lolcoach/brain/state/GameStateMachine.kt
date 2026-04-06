@@ -12,9 +12,13 @@ class GameStateMachine {
     private val _state = MutableStateFlow<GameState>(GameState.Idle)
     val state: StateFlow<GameState> = _state.asStateFlow()
 
+    private val _gameMode = MutableStateFlow(GameMode.UNKNOWN)
+    val gameMode: StateFlow<GameMode> = _gameMode.asStateFlow()
+
     fun onLockfileChanged(lockfileData: LockfileData?) {
         if (lockfileData == null) {
             _state.value = GameState.Idle
+            _gameMode.value = GameMode.UNKNOWN
         }
     }
 
@@ -33,6 +37,12 @@ class GameStateMachine {
     fun onGameSnapshotReceived(snapshot: GameSnapshot?) {
         if (snapshot != null && snapshot.gameData != null) {
             _state.value = GameState.InGame
+            // Detect game mode from snapshot data
+            val gd = snapshot.gameData!!
+            val detected = GameMode.fromApiData(gd.gameMode, gd.mapName, gd.mapNumber)
+            if (_gameMode.value == GameMode.UNKNOWN || _gameMode.value != detected) {
+                _gameMode.value = detected
+            }
         }
     }
 
@@ -42,5 +52,6 @@ class GameStateMachine {
 
     fun reset() {
         _state.value = GameState.Idle
+        _gameMode.value = GameMode.UNKNOWN
     }
 }

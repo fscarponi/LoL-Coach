@@ -14,10 +14,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 
 @Composable
-fun StatusBar(state: GameState, barAlpha: Float = 0.85f) {
+fun StatusBar(state: GameState, gameMode: GameMode = GameMode.UNKNOWN, barAlpha: Float = 0.85f) {
     val (statusText, statusColor) = when (state) {
         is GameState.Idle -> "Disconnesso" to Color(0xFF_F44336)
         is GameState.ChampSelect -> "Champion Select" to Color(0xFF_FF9800)
@@ -25,6 +26,8 @@ fun StatusBar(state: GameState, barAlpha: Float = 0.85f) {
         is GameState.InGame -> "In Partita" to Color(0xFF_4CAF50)
         is GameState.PostGame -> "Fine Partita" to Color(0xFF_9E9E9E)
     }
+
+    val modeLabel = if (gameMode != GameMode.UNKNOWN) " · ${gameMode.displayName}" else ""
 
     Row(
         modifier = Modifier
@@ -42,7 +45,7 @@ fun StatusBar(state: GameState, barAlpha: Float = 0.85f) {
                 .background(statusColor)
         )
         Text(
-            text = "LoL Coach · $statusText",
+            text = "LoL Coach · $statusText$modeLabel",
             color = Color.White,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold

@@ -1,5 +1,6 @@
 package com.lolcoach.brain.event
 
+import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 import com.lolcoach.brain.state.GameStateMachine
 import com.lolcoach.bridge.model.lcu.ChampSelectSession
@@ -23,9 +24,12 @@ class EventProcessor(
     fun processGameSnapshot(snapshot: GameSnapshot) {
         stateMachine.onGameSnapshotReceived(snapshot)
         val currentState = stateMachine.state.value
+        val currentMode = stateMachine.gameMode.value
 
         if (currentState is GameState.InGame) {
-            val newEvents = strategies.flatMap { it.evaluate(snapshot, currentState) }
+            val newEvents = strategies
+                .filter { it.isApplicable(currentMode) }
+                .flatMap { it.evaluate(snapshot, currentState) }
             scope.launch {
                 for (event in newEvents) {
                     val key = event.deduplicationKey()
@@ -78,6 +82,10 @@ class EventProcessor(
         is GameEvent.ItemSuggestion -> "item_$item"
         is GameEvent.SynergyAdvice -> "synergy_$advice"
         is GameEvent.GenericTip -> "tip_$message"
+        is GameEvent.AramHealthPackReminder -> "aram_health_${gameTime.toInt()}"
+        is GameEvent.AramTeamfightTip -> "aram_tf_$tip"
+        is GameEvent.AramPokeWarning -> "aram_poke_$enemyChampion"
+        is GameEvent.AramSnowballAdvice -> "aram_snow_$advice"
         is GameEvent.LlmAnalysis -> "llm_${section}_$content"
     }
 }

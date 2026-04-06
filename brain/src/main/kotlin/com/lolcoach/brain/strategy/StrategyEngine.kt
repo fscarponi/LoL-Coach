@@ -10,6 +10,7 @@ class StrategyEngine(
             strategies.add(EarlyGameStrategy())
             strategies.add(VisionMacroStrategy())
             strategies.add(ChampSelectStrategy())
+            strategies.add(AramStrategy())
         }
     }
 

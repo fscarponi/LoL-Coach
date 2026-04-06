@@ -4,6 +4,7 @@ import com.lolcoach.app.logging.AppLogger
 import com.lolcoach.app.logging.LogEntry
 import com.lolcoach.app.logging.LogLevel
 import com.lolcoach.brain.event.GameEvent
+import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.LockfileData
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
@@ -22,6 +23,7 @@ class DashboardViewModel(
     private val scope: CoroutineScope,
     private val gameEvents: SharedFlow<GameEvent>,
     private val gameState: StateFlow<GameState>,
+    private val gameModeFlow: StateFlow<GameMode>,
     private val lockfileData: StateFlow<LockfileData?>,
     private val gameSnapshots: SharedFlow<GameSnapshot>
 ) {
@@ -29,6 +31,7 @@ class DashboardViewModel(
     val connectionStatus: StateFlow<ConnectionStatus> = _connectionStatus.asStateFlow()
 
     val currentState: StateFlow<GameState> = gameState
+    val currentGameMode: StateFlow<GameMode> = gameModeFlow
 
     private val _lastSnapshot = MutableStateFlow<GameSnapshot?>(null)
     val lastSnapshot: StateFlow<GameSnapshot?> = _lastSnapshot.asStateFlow()

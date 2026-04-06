@@ -28,6 +28,7 @@ val TextSecondary = Color(0xFF_8B949E)
 fun DashboardContent(viewModel: DashboardViewModel) {
     val connectionStatus by viewModel.connectionStatus.collectAsState()
     val currentState by viewModel.currentState.collectAsState()
+    val currentGameMode by viewModel.currentGameMode.collectAsState()
     val lastSnapshot by viewModel.lastSnapshot.collectAsState()
     val allEvents by viewModel.allEvents.collectAsState()
     val llmAnalysis by viewModel.llmAnalysis.collectAsState()
@@ -56,7 +57,7 @@ fun DashboardContent(viewModel: DashboardViewModel) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 ConnectionPanel(connectionStatus)
-                GameStatePanel(currentState)
+                GameStatePanel(currentState, currentGameMode)
                 GameInfoPanel(lastSnapshot)
                 PlayersPanel(lastSnapshot)
             }

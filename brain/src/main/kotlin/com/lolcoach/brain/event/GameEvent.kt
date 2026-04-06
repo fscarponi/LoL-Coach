@@ -33,6 +33,23 @@ sealed class GameEvent {
 
     data class GenericTip(override val message: String) : GameEvent()
 
+    // ARAM-specific events
+    data class AramHealthPackReminder(val gameTime: Double) : GameEvent() {
+        override val message = "Ricorda i pack salute! Controlla le zone laterali"
+    }
+
+    data class AramTeamfightTip(val tip: String) : GameEvent() {
+        override val message = "Teamfight ARAM: $tip"
+    }
+
+    data class AramPokeWarning(val enemyChampion: String) : GameEvent() {
+        override val message = "Attenzione al poke di $enemyChampion! Stai dietro i minion"
+    }
+
+    data class AramSnowballAdvice(val advice: String) : GameEvent() {
+        override val message = "Snowball: $advice"
+    }
+
     data class LlmAnalysis(
         val section: String,
         val content: String

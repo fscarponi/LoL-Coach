@@ -1,6 +1,7 @@
 package com.lolcoach.brain.llm
 
 import com.lolcoach.brain.event.GameEvent
+import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.strategy.ChampSelectStrategy.Companion.CHAMPION_NAMES
 import com.lolcoach.bridge.model.lcu.ChampSelectSession
 import kotlinx.coroutines.CoroutineScope
@@ -22,22 +23,47 @@ class LlmCoachService(
 
     private var lastAnalyzedSession: String = ""
 
+    private var currentGameMode: GameMode = GameMode.UNKNOWN
+
+    fun setGameMode(mode: GameMode) {
+        currentGameMode = mode
+    }
+
     companion object {
-        val SYSTEM_PROMPT = """
-            Sei un coach esperto di League of Legends, specializzato nel ruolo Support.
-            Rispondi SEMPRE in italiano. Sii conciso ma strategicamente preciso.
-            
-            Quando ricevi la composizione dei team, analizza e rispondi con ESATTAMENTE queste 4 sezioni,
-            usando questo formato (una sezione per riga, prefissata dal tag):
-            
-            [COMP] Breve analisi della composizione di entrambi i team (punti di forza e debolezza)
-            [WIN] Win condition principale per il tuo team dal punto di vista del Support
-            [EVITA] Cosa evitare assolutamente in questa partita (errori critici)
-            [PRIORITA] Le 2-3 priorità chiave su cui concentrarsi come Support
-            
-            Ogni sezione deve essere una singola riga di massimo 150 caratteri.
-            Non usare elenchi puntati, asterischi o formattazione markdown.
-        """.trimIndent()
+        fun buildSystemPrompt(gameMode: GameMode): String {
+            val modeContext = when (gameMode) {
+                GameMode.ARAM, GameMode.ARAM_MAYHEM -> """
+                    La partita è in modalità ${gameMode.displayName} (Howling Abyss, corsia singola, 5v5 teamfight costanti).
+                    Adatta i consigli: non ci sono lane, jungle, dragon o baron. Focus su teamfight, poke, engage/disengage,
+                    gestione health pack, timing dei back (morte = unico modo per comprare), e sinergie di squadra in fight.
+                """.trimIndent()
+                GameMode.SUMMONERS_RIFT -> """
+                    La partita è in modalità Summoner's Rift (mappa classica 5v5 con lane, jungle e obiettivi).
+                    Adatta i consigli al ruolo Support in bot lane: visione, roaming, obiettivi, peeling.
+                """.trimIndent()
+                GameMode.UNKNOWN -> "Modalità di gioco non ancora determinata. Dai consigli generali."
+            }
+            return """
+                Sei un coach esperto di League of Legends, specializzato nel ruolo Support.
+                Rispondi SEMPRE in italiano. Sii conciso ma strategicamente preciso.
+                
+                $modeContext
+                
+                Quando ricevi la composizione dei team, analizza e rispondi con ESATTAMENTE queste 4 sezioni,
+                usando questo formato (una sezione per riga, prefissata dal tag):
+                
+                [COMP] Breve analisi della composizione di entrambi i team (punti di forza e debolezza)
+                [WIN] Win condition principale per il tuo team dal punto di vista del Support
+                [EVITA] Cosa evitare assolutamente in questa partita (errori critici)
+                [PRIORITA] Le 2-3 priorità chiave su cui concentrarsi come Support
+                
+                Ogni sezione deve essere una singola riga di massimo 150 caratteri.
+                Non usare elenchi puntati, asterischi o formattazione markdown.
+            """.trimIndent()
+        }
+
+        // Backward compatibility
+        val SYSTEM_PROMPT = buildSystemPrompt(GameMode.SUMMONERS_RIFT)
     }
 
     /**
@@ -52,7 +78,8 @@ class LlmCoachService(
         scope.launch {
             try {
                 val prompt = buildChampSelectPrompt(session)
-                val response = llmProvider.chat(SYSTEM_PROMPT, prompt)
+                val systemPrompt = buildSystemPrompt(currentGameMode)
+                val response = llmProvider.chat(systemPrompt, prompt)
                 parseAndEmitAnalysis(response)
             } catch (e: Exception) {
                 _analysisEvents.emit(

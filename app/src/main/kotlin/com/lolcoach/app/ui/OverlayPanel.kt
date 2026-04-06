@@ -43,6 +43,10 @@ fun EventCard(event: GameEvent) {
         is GameEvent.ItemSuggestion -> Color(0xAA_FFD600) to "🛒"
         is GameEvent.SynergyAdvice -> Color(0xAA_00BFA5) to "🤝"
         is GameEvent.GenericTip -> Color(0xAA_546E7A) to "💡"
+        is GameEvent.AramHealthPackReminder -> Color(0xAA_00C853) to "💊"
+        is GameEvent.AramTeamfightTip -> Color(0xAA_FF8C00) to "⚔️"
+        is GameEvent.AramPokeWarning -> Color(0xAA_D50000) to "🎯"
+        is GameEvent.AramSnowballAdvice -> Color(0xAA_2962FF) to "❄️"
         is GameEvent.LlmAnalysis -> Color(0xAA_7C4DFF) to "🧠"
     }
 

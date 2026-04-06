@@ -2,10 +2,13 @@ package com.lolcoach.brain.strategy
 
 import com.lolcoach.brain.event.GameEvent
 import com.lolcoach.brain.event.Strategy
+import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
 
 class EarlyGameStrategy : Strategy {
+
+    override val applicableGameModes = setOf(GameMode.SUMMONERS_RIFT)
 
     companion object {
         // Level 2 requires ~280 XP = first wave (6 melee + 3 caster) + 1 melee from second wave
