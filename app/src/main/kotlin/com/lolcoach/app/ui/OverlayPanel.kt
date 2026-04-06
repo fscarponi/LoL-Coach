@@ -48,6 +48,7 @@ fun EventCard(event: GameEvent) {
         is GameEvent.AramPokeWarning -> Color(0xAA_D50000) to "🎯"
         is GameEvent.AramSnowballAdvice -> Color(0xAA_2962FF) to "❄️"
         is GameEvent.LlmAnalysis -> Color(0xAA_7C4DFF) to "🧠"
+        is GameEvent.UserVoiceQuery -> Color(0xAA_00C853) to "🎤"
     }
 
     Box(

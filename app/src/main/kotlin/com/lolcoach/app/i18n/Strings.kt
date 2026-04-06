@@ -20,4 +20,13 @@ object Strings {
     const val LoadingStatus = "Loading..."
     const val InGameStatus = "In Game"
     const val PostGameStatus = "Post Game"
+    
+    // Voice
+    const val VoiceCoaching = "Voice Coaching"
+    const val EhyCoach = "Ehy Coach!"
+    const val Microphone = "Microphone"
+    const val NoDevices = "No microphones found"
+    const val Refresh = "Refresh"
+    const val Listening = "Listening..."
+    const val Thinking = "Thinking..."
 }

@@ -1,6 +1,7 @@
 package com.lolcoach.app
 
 import androidx.compose.foundation.layout.*
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,6 +29,8 @@ import com.lolcoach.brain.strategy.StrategyEngine
 import com.lolcoach.app.tts.SystemTtsManager
 import com.lolcoach.app.tts.TtsEventListener
 import com.lolcoach.bridge.BridgeFacade
+import com.lolcoach.bridge.voice.WakeWordDetector
+import java.io.File
 
 fun main() = application {
     val scope = rememberCoroutineScope()
@@ -59,7 +62,15 @@ fun main() = application {
             gameModeFlow = stateMachine.gameMode,
             lockfileData = bridge.lockfileData,
             gameSnapshots = bridge.gameSnapshots
-        ).also { it.start() }
+        ).also { 
+            it.start()
+            it.refreshDevices()
+        }
+    }
+
+    val wakeWordDetector = remember {
+        val modelPath = System.getenv("VOSK_MODEL_PATH") ?: "models/vosk-model-small-en-us"
+        WakeWordDetector(scope, modelPath)
     }
 
     val ttsListener = remember {
@@ -102,6 +113,29 @@ fun main() = application {
                 stateMachine.onLockfileChanged(data)
             }
         }
+
+        // Voice Coaching logic
+        scope.launch {
+            combine(dashboardViewModel.voiceEnabled, dashboardViewModel.selectedDevice) { enabled, device ->
+                enabled to device
+            }.collect { (enabled, device) ->
+                if (enabled) {
+                    AppLogger.info("Voice", "Starting wake-word detector...")
+                    wakeWordDetector.start(device)
+                } else {
+                    wakeWordDetector.stop()
+                }
+            }
+        }
+
+        scope.launch {
+            wakeWordDetector.onWakeWordDetected.collect {
+                AppLogger.event("Voice", "Wake-word detected! Listening for query...")
+                // For now, we simulate a query for testing, or we would start recording STT
+                // In a real implementation, we would start AudioBufferRecorder and send to Gemini STT
+                llmCoachService?.askCoach("What should I do now?") 
+            }
+        }
     }
 
     // ── Dashboard Window (main informative UI) ──
@@ -112,7 +146,7 @@ fun main() = application {
             exitApplication()
         },
         state = WindowState(
-            size = DpSize(1100.dp, 700.dp),
+            size = DpSize(1200.dp, 800.dp),
             position = WindowPosition(Alignment.Center)
         ),
         title = "LoL Support Strategist — Dashboard",

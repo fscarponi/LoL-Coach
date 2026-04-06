@@ -70,6 +70,7 @@ LoL-Coach/
 | UI | Compose Multiplatform Desktop + Material 3 | 1.7.3 |
 | Concurrency | Kotlin Coroutines & Flow | 1.10.1 |
 | Serialization | kotlinx.serialization (JSON) | 1.8.0 |
+| Voice Recognition | Vosk (offline wake-word) | 0.3.45 |
 | TTS | System API (`say` macOS / `espeak` Linux) or Piper | — |
 
 ---
@@ -89,6 +90,8 @@ Responsible exclusively for I/O with Riot's local APIs. No decision logic.
 | `LiveClientPoller` | HTTP polling ≤1Hz on `https://127.0.0.1:2999/liveclientdata/allgamedata` → `SharedFlow<GameSnapshot>` |
 | `RetryUtils` | `retryWithBackoff` utility with configurable exponential backoff (initial delay, max delay, max retries) |
 | `BridgeFacade` | Orchestrator: manages the lifecycle of all components, exposes Flow to the consumer module |
+| `AudioCaptureProvider` | Lists available microphones and manages `TargetDataLine` capture (Java Sound API) |
+| `WakeWordDetector` | Continuous offline audio analysis (Vosk) to detect "Hey Coach" wake-word |
 
 **Data Models** (`bridge/model/`):
 - **LCU API**: `ChampSelectSession`, `ChampSelectPlayerSelection`, `ChampSelectAction`
@@ -105,6 +108,7 @@ Pure decision logic. No dependencies on network or I/O.
 | `EventProcessor` | Receives snapshots from Bridge, applies strategies, generates `GameEvent` with **deduplication** (avoids repeated notifications) |
 | `Strategy` (interface) | Strategy contract: `evaluate(snapshot, state)` and `evaluateChampSelect(session, state)` |
 | `StrategyEngine` | Extensible registry of strategies. By default includes the 3 built-in strategies |
+| `LlmCoachService` | Orchestrates queries to the LLM (Gemini/OpenAI) for Champ Select analysis and **Voice Queries**. |
 
 **Built-in Strategies**:
 
@@ -216,6 +220,15 @@ The application can be configured via environment variables, especially for LLM 
 | `LLM_BASE_URL` | Base URL for OpenAI compatible APIs | `http://localhost:11434/v1` (Ollama) |
 | `LLM_TEMPERATURE` | Generation temperature (0.0 to 1.0/2.0) | `0.7` |
 | `LLM_MAX_TOKENS` | Maximum tokens in the response | `1024` |
+| `VOSK_MODEL_PATH` | Path to the Vosk model directory | `models/vosk-model-small-en-us` |
+
+### 🎙️ Voice Coaching ("Ehy Coach!")
+
+The application includes an offline wake-word detector based on **Vosk**. 
+1. Enable the feature in the Dashboard.
+2. Select your microphone.
+3. Say **"Hey Coach"** during the game.
+4. The coach will hear your question and respond via TTS.
 
 ---
 

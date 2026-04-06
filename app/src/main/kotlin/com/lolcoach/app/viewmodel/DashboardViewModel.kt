@@ -8,6 +8,8 @@ import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.LockfileData
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.bridge.voice.AudioCaptureProvider
+import com.lolcoach.bridge.voice.VoiceDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -46,6 +48,30 @@ class DashboardViewModel(
 
     private val _selectedLogLevel = MutableStateFlow<LogLevel?>(null)
     val selectedLogLevel: StateFlow<LogLevel?> = _selectedLogLevel.asStateFlow()
+
+    // Voice Voice settings
+    private val _voiceEnabled = MutableStateFlow(false)
+    val voiceEnabled: StateFlow<Boolean> = _voiceEnabled.asStateFlow()
+
+    private val _availableDevices = MutableStateFlow<List<VoiceDevice>>(emptyList())
+    val availableDevices: StateFlow<List<VoiceDevice>> = _availableDevices.asStateFlow()
+
+    private val _selectedDevice = MutableStateFlow<VoiceDevice?>(null)
+    val selectedDevice: StateFlow<VoiceDevice?> = _selectedDevice.asStateFlow()
+
+    fun toggleVoice(enabled: Boolean) {
+        _voiceEnabled.value = enabled
+        AppLogger.info("Voice", "Voice coaching ${if (enabled) "enabled" else "disabled"}")
+    }
+
+    fun setVoiceDevice(device: VoiceDevice) {
+        _selectedDevice.value = device
+        AppLogger.info("Voice", "Selected microphone: ${device.name}")
+    }
+
+    fun refreshDevices() {
+        _availableDevices.value = AudioCaptureProvider.listDevices()
+    }
 
     val filteredLogs: StateFlow<List<LogEntry>> = combine(logs, _selectedLogLevel) { allLogs, level ->
         if (level == null) allLogs else allLogs.filter { it.level == level }

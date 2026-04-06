@@ -91,6 +91,28 @@ class LlmCoachService(
     }
 
     /**
+     * Handles a direct voice query from the user.
+     */
+    fun askCoach(query: String) {
+        scope.launch {
+            try {
+                _analysisEvents.emit(GameEvent.UserVoiceQuery(query))
+                
+                val systemPrompt = buildSystemPrompt(currentGameMode) + 
+                    "\n\nYou are answering a direct voice question from the player. " +
+                    "Keep it extremely short (max 20 words) and helpful for the current game situation."
+                
+                val rawResponse = llmProvider.chat(systemPrompt, "User question: $query")
+                
+                // Emittiamo la risposta come un evento LLM speciale
+                _analysisEvents.emit(GameEvent.LlmAnalysis("COACH", rawResponse))
+            } catch (e: Exception) {
+                _analysisEvents.emit(GameEvent.LlmAnalysis("ERROR", "Coach failed to answer: ${e.message?.take(80)}"))
+            }
+        }
+    }
+
+    /**
      * Parses the raw LLM response into a structured LlmResponse.
      */
     internal fun parseResponse(rawResponse: String): LlmResponse {

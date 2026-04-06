@@ -87,5 +87,6 @@ class EventProcessor(
         is GameEvent.AramPokeWarning -> "aram_poke_$enemyChampion"
         is GameEvent.AramSnowballAdvice -> "aram_snow_$advice"
         is GameEvent.LlmAnalysis -> "llm_${section}_$content"
+        is GameEvent.UserVoiceQuery -> "voice_${text.hashCode()}_${System.currentTimeMillis() / 5000}"
     }
 }

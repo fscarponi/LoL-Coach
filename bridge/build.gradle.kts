@@ -15,6 +15,10 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.auth)
 
+    // Voice
+    implementation(libs.vosk)
+    implementation(libs.jna)
+
     // Logging
     implementation(libs.ktor.client.logging)
     implementation(libs.logback.classic)

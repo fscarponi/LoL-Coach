@@ -56,4 +56,8 @@ sealed class GameEvent {
     ) : GameEvent() {
         override val message = "[$section] $content"
     }
+
+    data class UserVoiceQuery(val text: String) : GameEvent() {
+        override val message = "You asked: \"$text\""
+    }
 }

@@ -27,10 +27,13 @@ import com.lolcoach.brain.event.GameEvent
 import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.bridge.voice.VoiceDevice
 import java.text.SimpleDateFormat
 import java.util.Date
 
 // ─── Section Header ───────────────────────────────────────────
+
+val BackgroundSecondary = Color(0xFF_161B22)
 
 @Composable
 fun SectionHeader(title: String, emoji: String) {
@@ -51,8 +54,8 @@ fun SectionHeader(title: String, emoji: String) {
 }
 
 @Composable
-fun ConnectionPanel(status: ConnectionStatus) {
-    DashboardCard {
+fun ConnectionPanel(status: ConnectionStatus, modifier: Modifier = Modifier) {
+    DashboardCard(modifier = modifier) {
         SectionHeader(Strings.Connection.uppercase(), "🔌")
 
         StatusRow(
@@ -96,7 +99,7 @@ fun StatusRow(label: String, active: Boolean, detail: String) {
 // ─── Game State Panel ─────────────────────────────────────────
 
 @Composable
-fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN) {
+fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN, modifier: Modifier = Modifier) {
     val (stateName, stateColor, stateEmoji) = when (state) {
         is GameState.Idle -> Triple(Strings.Idle, AccentRed, "⏸️")
         is GameState.ChampSelect -> Triple(Strings.ChampSelect, AccentOrange, "🎮")
@@ -112,7 +115,7 @@ fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN) {
         GameMode.UNKNOWN -> TextSecondary
     }
 
-    DashboardCard {
+    DashboardCard(modifier = modifier) {
         SectionHeader("Game State", "🎯")
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -145,8 +148,8 @@ fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN) {
 // ─── Game Info Panel ──────────────────────────────────────────
 
 @Composable
-fun GameInfoPanel(snapshot: GameSnapshot?) {
-    DashboardCard {
+fun GameInfoPanel(snapshot: GameSnapshot?, modifier: Modifier = Modifier) {
+    DashboardCard(modifier = modifier) {
         SectionHeader("GAME INFO", "📊")
 
         if (snapshot == null || snapshot.activePlayer == null) {
@@ -208,8 +211,8 @@ fun StatChip(label: String, value: String) {
 // ─── Players Panel ────────────────────────────────────────────
 
 @Composable
-fun PlayersPanel(snapshot: GameSnapshot?) {
-    DashboardCard {
+fun PlayersPanel(snapshot: GameSnapshot?, modifier: Modifier = Modifier) {
+    DashboardCard(modifier = modifier) {
         SectionHeader("Players", "👥")
 
         if (snapshot == null || snapshot.allPlayers.isEmpty()) {
@@ -384,6 +387,7 @@ fun EventRow(entry: DashboardViewModel.TimestampedGameEvent) {
         is GameEvent.AramPokeWarning -> "🎯" to AccentRed
         is GameEvent.AramSnowballAdvice -> "❄️" to AccentBlue
         is GameEvent.LlmAnalysis -> "🧠" to Color(0xFF_7C4DFF)
+        is GameEvent.UserVoiceQuery -> "🎤" to AccentGreen
     }
 
     Row(
@@ -492,6 +496,104 @@ fun LogRow(entry: LogEntry) {
             .fillMaxWidth()
             .padding(horizontal = 4.dp, vertical = 1.dp)
     )
+}
+
+// ─── Voice Settings Panel ───────────────────────────────────
+
+@Composable
+fun VoiceSettingsPanel(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+    availableDevices: List<VoiceDevice>,
+    selectedDevice: VoiceDevice?,
+    onDeviceSelected: (VoiceDevice) -> Unit,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    DashboardCard(modifier = modifier) {
+        SectionHeader(Strings.VoiceCoaching, "🎙️")
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(
+                checked = enabled,
+                onCheckedChange = onToggle,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = AccentGreen,
+                    checkedTrackColor = AccentGreen.copy(alpha = 0.5f)
+                )
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = Strings.EhyCoach,
+                style = MaterialTheme.typography.titleMedium,
+                color = if (enabled) AccentGreen else TextSecondary
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = Strings.Microphone,
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(BackgroundSecondary)
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = selectedDevice?.name ?: Strings.NoDevices,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (selectedDevice != null) TextPrimary else AccentRed
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            IconButton(onClick = onRefresh) {
+                Text("🔄", fontSize = 18.sp)
+            }
+        }
+        
+        if (availableDevices.isNotEmpty() && enabled) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 120.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                availableDevices.forEach { device ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onDeviceSelected(device) }
+                            .padding(vertical = 4.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = device == selectedDevice,
+                            onClick = { onDeviceSelected(device) },
+                            colors = RadioButtonDefaults.colors(selectedColor = AccentGreen)
+                        )
+                        Text(
+                            text = device.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (device == selectedDevice) TextPrimary else TextSecondary
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ─── Card Container ───────────────────────────────────────────
