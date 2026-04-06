@@ -2,8 +2,8 @@ package com.lolcoach.brain.event
 
 import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
-import com.lolcoach.bridge.model.lcu.ChampSelectSession
-import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.model.lcu.ChampSelectSession
+import com.lolcoach.model.liveclient.GameSnapshot
 
 interface Strategy {
     /** Game modes in which this strategy is active. */

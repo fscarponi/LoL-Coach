@@ -18,9 +18,13 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
 
+    // DI
+    implementation(libs.koin.core)
+
     // Testing
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.koin.test)
 }
 
 compose.desktop {

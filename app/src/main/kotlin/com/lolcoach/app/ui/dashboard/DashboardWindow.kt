@@ -38,6 +38,7 @@ fun DashboardContent(viewModel: DashboardViewModel) {
     val downloadState by viewModel.modelDownloadState.collectAsState()
     val wakeWord by viewModel.wakeWord.collectAsState()
     val isListening by viewModel.isListeningForQuery.collectAsState()
+    val appSettings by viewModel.appSettings.collectAsState()
 
     var sideTabOpen by remember { mutableStateOf<SideTab?>(null) }
 
@@ -124,6 +125,11 @@ fun DashboardContent(viewModel: DashboardViewModel) {
                     when (sideTabOpen) {
                         SideTab.SETTINGS -> {
                             SidePanelHeader("Settings", "⚙️") { sideTabOpen = null }
+                            SettingsPanel(
+                                settings = appSettings,
+                                onSettingsChanged = { viewModel.updateAppSettings(it) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
                             VoiceSettingsPanel(
                                 enabled = voiceEnabled,
                                 onToggle = { viewModel.toggleVoice(it) },

@@ -6,7 +6,7 @@ import com.lolcoach.brain.llm.model.LlmResponse
 import com.lolcoach.brain.llm.model.RequestBuilder
 import com.lolcoach.brain.llm.prompt.PromptLoader
 import com.lolcoach.brain.state.GameMode
-import com.lolcoach.bridge.model.lcu.ChampSelectSession
+import com.lolcoach.model.lcu.ChampSelectSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

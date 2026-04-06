@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":bridge"))
+    implementation(project(":model"))
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
 

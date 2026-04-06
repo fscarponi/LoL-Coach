@@ -2,8 +2,8 @@ package com.lolcoach.brain.strategy
 
 import com.lolcoach.brain.event.GameEvent
 import com.lolcoach.brain.state.GameState
-import com.lolcoach.bridge.model.lcu.ChampSelectPlayerSelection
-import com.lolcoach.bridge.model.lcu.ChampSelectSession
+import com.lolcoach.model.lcu.ChampSelectPlayerSelection
+import com.lolcoach.model.lcu.ChampSelectSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

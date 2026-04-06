@@ -2,7 +2,7 @@ package com.lolcoach.brain.strategy
 
 import com.lolcoach.brain.event.GameEvent
 import com.lolcoach.brain.state.GameState
-import com.lolcoach.bridge.model.liveclient.*
+import com.lolcoach.model.liveclient.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

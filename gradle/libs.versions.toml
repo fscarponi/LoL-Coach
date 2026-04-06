@@ -7,6 +7,7 @@ serialization = "1.8.0"
 logback = "1.5.16"
 vosk = "0.3.38"
 jna = "5.16.0"
+koin = "4.0.2"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -26,6 +27,9 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 
 vosk = { module = "com.alphacephei:vosk", version.ref = "vosk" }
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

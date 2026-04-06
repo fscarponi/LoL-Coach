@@ -15,6 +15,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "LoL-Coach"
 
+include(":model")
 include(":bridge")
 include(":brain")
 include(":app")

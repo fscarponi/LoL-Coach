@@ -14,20 +14,23 @@ data class LlmConfig(
     val maxTokens: Int = System.getenv("LLM_MAX_TOKENS")?.toIntOrNull() ?: 1024,
     val enabled: Boolean = System.getenv("LLM_ENABLED")?.toBoolean() ?: true
 ) {
-    fun createProvider(): LlmProvider = when (provider) {
-        LlmProviderType.OPENAI_COMPATIBLE -> OpenAiCompatibleProvider(
-            baseUrl = baseUrl,
-            model = model.ifBlank { "llama3" },
-            apiKey = apiKey.ifBlank { System.getenv("OPENAI_API_KEY") ?: "" },
-            temperature = temperature,
-            maxTokens = maxTokens
-        )
-        LlmProviderType.GEMINI -> GeminiProvider(
-            model = model.ifBlank { "gemini-1.5-flash" },
-            apiKey = apiKey.ifBlank { System.getenv("GEMINI_API_KEY") ?: "" },
-            temperature = temperature,
-            maxTokens = maxTokens
-        )
+    fun createProvider(cached: Boolean = true): LlmProvider {
+        val base: LlmProvider = when (provider) {
+            LlmProviderType.OPENAI_COMPATIBLE -> OpenAiCompatibleProvider(
+                baseUrl = baseUrl,
+                model = model.ifBlank { "llama3" },
+                apiKey = apiKey.ifBlank { System.getenv("OPENAI_API_KEY") ?: "" },
+                temperature = temperature,
+                maxTokens = maxTokens
+            )
+            LlmProviderType.GEMINI -> GeminiProvider(
+                model = model.ifBlank { "gemini-1.5-flash" },
+                apiKey = apiKey.ifBlank { System.getenv("GEMINI_API_KEY") ?: "" },
+                temperature = temperature,
+                maxTokens = maxTokens
+            )
+        }
+        return if (cached) CachedLlmProvider(base) else base
     }
 }
 

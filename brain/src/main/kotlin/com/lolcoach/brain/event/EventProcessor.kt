@@ -3,8 +3,8 @@ package com.lolcoach.brain.event
 import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
 import com.lolcoach.brain.state.GameStateMachine
-import com.lolcoach.bridge.model.lcu.ChampSelectSession
-import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.model.lcu.ChampSelectSession
+import com.lolcoach.model.liveclient.GameSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow

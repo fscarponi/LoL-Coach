@@ -6,12 +6,13 @@ import com.lolcoach.app.logging.LogLevel
 import com.lolcoach.brain.event.GameEvent
 import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.state.GameState
-import com.lolcoach.bridge.model.LockfileData
-import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.model.LockfileData
+import com.lolcoach.model.liveclient.GameSnapshot
 import com.lolcoach.bridge.voice.AudioCaptureProvider
 import com.lolcoach.bridge.voice.DownloadState
 import com.lolcoach.bridge.voice.VoiceDevice
 import com.lolcoach.bridge.voice.VoskModelDownloader
+import com.lolcoach.app.ui.dashboard.AppSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -48,6 +49,13 @@ class DashboardViewModel(
     val llmAnalysis: StateFlow<List<GameEvent.LlmAnalysis>> = _llmAnalysis.asStateFlow()
 
     val logs: StateFlow<List<LogEntry>> = AppLogger.logs
+
+    private val _appSettings = MutableStateFlow(AppSettings())
+    val appSettings: StateFlow<AppSettings> = _appSettings.asStateFlow()
+
+    fun updateAppSettings(settings: AppSettings) {
+        _appSettings.value = settings
+    }
 
     private val _selectedLogLevel = MutableStateFlow<LogLevel?>(null)
     val selectedLogLevel: StateFlow<LogLevel?> = _selectedLogLevel.asStateFlow()

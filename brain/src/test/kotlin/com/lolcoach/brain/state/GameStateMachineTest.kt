@@ -1,9 +1,9 @@
 package com.lolcoach.brain.state
 
-import com.lolcoach.bridge.model.LockfileData
-import com.lolcoach.bridge.model.lcu.ChampSelectSession
-import com.lolcoach.bridge.model.liveclient.GameData
-import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.model.LockfileData
+import com.lolcoach.model.lcu.ChampSelectSession
+import com.lolcoach.model.liveclient.GameData
+import com.lolcoach.model.liveclient.GameSnapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

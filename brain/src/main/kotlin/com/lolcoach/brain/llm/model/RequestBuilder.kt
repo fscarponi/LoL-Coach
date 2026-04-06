@@ -2,8 +2,8 @@ package com.lolcoach.brain.llm.model
 
 import com.lolcoach.brain.state.GameMode
 import com.lolcoach.brain.strategy.ChampSelectStrategy.Companion.CHAMPION_NAMES
-import com.lolcoach.bridge.model.lcu.ChampSelectSession
-import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.model.lcu.ChampSelectSession
+import com.lolcoach.model.liveclient.GameSnapshot
 
 /**
  * Builds LlmRequest from raw bridge data.
@@ -192,7 +192,7 @@ object RequestBuilder {
         return "%d:%02d".format(min, sec)
     }
 
-    private fun com.lolcoach.bridge.model.liveclient.Player.toPlayerInfo() = PlayerInfo(
+    private fun com.lolcoach.model.liveclient.Player.toPlayerInfo() = PlayerInfo(
         championName = championName,
         level = level,
         kills = scores?.kills ?: 0,

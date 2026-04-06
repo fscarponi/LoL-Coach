@@ -3,8 +3,8 @@ package com.lolcoach.brain.strategy
 import com.lolcoach.brain.event.GameEvent
 import com.lolcoach.brain.event.Strategy
 import com.lolcoach.brain.state.GameState
-import com.lolcoach.bridge.model.lcu.ChampSelectSession
-import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.model.lcu.ChampSelectSession
+import com.lolcoach.model.liveclient.GameSnapshot
 
 class ChampSelectStrategy : Strategy {
 

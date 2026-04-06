@@ -1,8 +1,8 @@
 package com.lolcoach.brain.llm
 
 import com.lolcoach.brain.event.GameEvent
-import com.lolcoach.bridge.model.lcu.ChampSelectPlayerSelection
-import com.lolcoach.bridge.model.lcu.ChampSelectSession
+import com.lolcoach.model.lcu.ChampSelectPlayerSelection
+import com.lolcoach.model.lcu.ChampSelectSession
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList

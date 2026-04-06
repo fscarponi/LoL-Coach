@@ -13,9 +13,11 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import com.lolcoach.app.di.appModule
+import com.lolcoach.app.di.bridgeModule
 import com.lolcoach.app.logging.AppLogger
-import com.lolcoach.app.tts.SystemTtsManager
 import com.lolcoach.app.tts.TtsEventListener
+import com.lolcoach.app.tts.TtsManager
 import com.lolcoach.app.ui.OverlayPanel
 import com.lolcoach.app.ui.StatusBar
 import com.lolcoach.app.ui.dashboard.DashboardContent
@@ -24,37 +26,31 @@ import com.lolcoach.app.viewmodel.DashboardViewModel
 import com.lolcoach.app.viewmodel.OverlayViewModel
 import com.lolcoach.brain.event.EventProcessor
 import com.lolcoach.brain.llm.LlmCoachService
-import com.lolcoach.brain.llm.LlmConfig
 import com.lolcoach.brain.state.GameStateMachine
-import com.lolcoach.brain.strategy.StrategyEngine
 import com.lolcoach.bridge.BridgeFacade
 import com.lolcoach.bridge.voice.VoskModelDownloader
 import com.lolcoach.bridge.voice.WakeWordDetector
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import org.koin.core.context.startKoin
+import org.koin.core.context.stopKoin
 
 fun main() = application {
     val scope = rememberCoroutineScope()
 
-    val stateMachine = remember { GameStateMachine() }
-    val strategyEngine = remember { StrategyEngine() }
-    val eventProcessor = remember {
-        EventProcessor(scope, stateMachine, strategyEngine.allStrategies())
+    val koin = remember {
+        startKoin {
+            modules(appModule, bridgeModule(scope))
+        }.koin
     }
-    val bridge = remember { BridgeFacade(scope) }
 
-    val modelPath = remember {
-        System.getenv("VOSK_MODEL_PATH") ?: "models/vosk-model"
-    }
-    val modelDownloader = remember { VoskModelDownloader(modelPath) }
-
-    // LLM Coach Service
-    val llmConfig = remember { LlmConfig() }
-    val llmCoachService = remember {
-        if (llmConfig.enabled) {
-            LlmCoachService(scope, llmConfig.createProvider())
-        } else null
-    }
+    val stateMachine = remember { koin.get<GameStateMachine>() }
+    val eventProcessor = remember { koin.get<EventProcessor>() }
+    val bridge = remember { koin.get<BridgeFacade>() }
+    val modelDownloader = remember { koin.get<VoskModelDownloader>() }
+    val llmCoachService = remember { koin.getOrNull<LlmCoachService>() }
+    val wakeWordDetector = remember { koin.get<WakeWordDetector>() }
+    val ttsManager = remember { koin.get<TtsManager>() }
 
     val viewModel = remember {
         OverlayViewModel(scope, eventProcessor.events, stateMachine.state).also { it.start() }
@@ -75,13 +71,8 @@ fun main() = application {
         }
     }
 
-    val wakeWordDetector = remember {
-        // Points to the root dir, Vosk will find the model inside
-        WakeWordDetector(scope, modelPath)
-    }
-
     val ttsListener = remember {
-        TtsEventListener(scope, SystemTtsManager(), eventProcessor.events).also { it.start() }
+        TtsEventListener(scope, ttsManager, eventProcessor.events).also { it.start() }
     }
 
     // Connect bridge to event processor
@@ -165,6 +156,7 @@ fun main() = application {
         onCloseRequest = {
             ttsListener.stop()
             bridge.stop()
+            stopKoin()
             exitApplication()
         },
         state = WindowState(

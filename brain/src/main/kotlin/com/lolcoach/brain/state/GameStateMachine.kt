@@ -1,8 +1,8 @@
 package com.lolcoach.brain.state
 
-import com.lolcoach.bridge.model.LockfileData
-import com.lolcoach.bridge.model.lcu.ChampSelectSession
-import com.lolcoach.bridge.model.liveclient.GameSnapshot
+import com.lolcoach.model.LockfileData
+import com.lolcoach.model.lcu.ChampSelectSession
+import com.lolcoach.model.liveclient.GameSnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
