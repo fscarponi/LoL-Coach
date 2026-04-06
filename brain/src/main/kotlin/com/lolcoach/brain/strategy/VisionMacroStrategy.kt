@@ -36,7 +36,7 @@ class VisionMacroStrategy : Strategy {
         if (gameTime > WARD_REMINDER_TIME_THRESHOLD && wardCharges >= 2) {
             events.add(
                 GameEvent.VisionNeeded(
-                    "Hai $wardCharges cariche di ward disponibili. Warda gli obiettivi!"
+                    "You have $wardCharges ward charges available. Ward the objectives!"
                 )
             )
         }
@@ -47,7 +47,7 @@ class VisionMacroStrategy : Strategy {
             events.add(
                 GameEvent.ItemSuggestion(
                     "Control Ward",
-                    "Non hai Control Ward in inventario, comprala al prossimo back"
+                    "You don't have a Control Ward in your inventory, buy one on your next back"
                 )
             )
         }
@@ -59,7 +59,7 @@ class VisionMacroStrategy : Strategy {
                 events.add(
                     GameEvent.ItemSuggestion(
                         "Oracle Lens",
-                        "Considera di switchare a Oracle Lens per il mid-game"
+                        "Consider switching to Oracle Lens for the mid-game"
                     )
                 )
             }

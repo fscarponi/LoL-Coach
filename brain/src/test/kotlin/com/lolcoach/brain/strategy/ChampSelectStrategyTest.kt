@@ -47,7 +47,7 @@ class ChampSelectStrategyTest {
         )
         val events = strategy.evaluateChampSelect(session, GameState.ChampSelect)
         val synergyEvent = events.filterIsInstance<GameEvent.SynergyAdvice>()
-        assertTrue(synergyEvent.any { it.advice.contains("Ottima sinergia") })
+        assertTrue(synergyEvent.any { it.advice.contains("Great synergy") })
     }
 
     @Test
@@ -60,7 +60,7 @@ class ChampSelectStrategyTest {
         )
         val events = strategy.evaluateChampSelect(session, GameState.ChampSelect)
         val synergyEvent = events.filterIsInstance<GameEvent.SynergyAdvice>()
-        assertTrue(synergyEvent.any { it.advice.contains("migliori sinergie") })
+        assertTrue(synergyEvent.any { it.advice.contains("best synergies") })
     }
 
     @Test

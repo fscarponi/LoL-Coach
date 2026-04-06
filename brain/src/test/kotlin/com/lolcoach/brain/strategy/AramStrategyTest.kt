@@ -65,7 +65,7 @@ class AramStrategyTest {
         val snapshot = makeSnapshot(gameTime = 100.0)
         val events = strategy.evaluate(snapshot, GameState.InGame)
         val tips = events.filterIsInstance<GameEvent.AramTeamfightTip>()
-        assertTrue(tips.any { it.tip.contains("Fase iniziale") })
+        assertTrue(tips.any { it.tip.contains("Early game") })
     }
 
     @Test

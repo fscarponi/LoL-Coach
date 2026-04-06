@@ -67,7 +67,7 @@ class ChampSelectStrategy : Strategy {
                 if (support.championId in goodSupports) {
                     events.add(
                         GameEvent.SynergyAdvice(
-                            "Ottima sinergia! $supportName è perfetto con $adcName"
+                            "Great synergy! $supportName is perfect with $adcName"
                         )
                     )
                 } else {
@@ -77,7 +77,7 @@ class ChampSelectStrategy : Strategy {
                         .joinToString(", ")
                     events.add(
                         GameEvent.SynergyAdvice(
-                            "Con $adcName, le migliori sinergie sono: $suggestions"
+                            "With $adcName, the best synergies are: $suggestions"
                         )
                     )
                 }

@@ -54,12 +54,12 @@ fun SectionHeader(title: String, emoji: String) {
 @Composable
 fun ConnectionPanel(status: ConnectionStatus) {
     DashboardCard {
-        SectionHeader("CONNESSIONE", "🔌")
+        SectionHeader("CONNECTION", "🔌")
 
         StatusRow(
             label = "Lockfile",
             active = status.lockfileFound,
-            detail = if (status.lockfileFound) "Porta ${status.lockfilePort}" else "Non trovato"
+            detail = if (status.lockfileFound) "Port ${status.lockfilePort}" else "Not found"
         )
         Spacer(Modifier.height(4.dp))
         StatusRow(
@@ -68,9 +68,9 @@ fun ConnectionPanel(status: ConnectionStatus) {
             detail = if (status.liveClientActive) {
                 status.lastSnapshotTime?.let {
                     val ago = (System.currentTimeMillis() - it) / 1000
-                    "Ultimo snapshot ${ago}s fa"
-                } ?: "Connesso"
-            } else "Non attivo"
+                    "Last snapshot ${ago}s ago"
+                } ?: "Connected"
+            } else "Not active"
         )
     }
 }
@@ -99,11 +99,11 @@ fun StatusRow(label: String, active: Boolean, detail: String) {
 @Composable
 fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN) {
     val (stateName, stateColor, stateEmoji) = when (state) {
-        is GameState.Idle -> Triple("IDLE — Disconnesso", AccentRed, "⏸️")
+        is GameState.Idle -> Triple("IDLE — Disconnected", AccentRed, "⏸️")
         is GameState.ChampSelect -> Triple("CHAMPION SELECT", AccentOrange, "🎮")
-        is GameState.Loading -> Triple("CARICAMENTO", Color(0xFF_FFC107), "⏳")
-        is GameState.InGame -> Triple("IN PARTITA", AccentGreen, "⚔️")
-        is GameState.PostGame -> Triple("FINE PARTITA", TextSecondary, "🏁")
+        is GameState.Loading -> Triple("LOADING", Color(0xFF_FFC107), "⏳")
+        is GameState.InGame -> Triple("IN GAME", AccentGreen, "⚔️")
+        is GameState.PostGame -> Triple("POST GAME", TextSecondary, "🏁")
     }
 
     val modeColor = when (gameMode) {

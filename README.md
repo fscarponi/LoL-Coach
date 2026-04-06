@@ -1,28 +1,28 @@
 # LoL Support Strategist
 
-Un coach desktop in tempo reale per **League of Legends**, focalizzato sul ruolo del **Support**.  
-L'applicazione si connette alle API locali del client di gioco (LCU API + Live Client Data API), analizza lo stato della partita e fornisce suggerimenti strategici tramite notifiche visive e vocali (TTS).
+A real-time desktop coach for **League of Legends**, focused on the **Support** role.  
+The application connects to the game client's local APIs (LCU API + Live Client Data API), analyzes the game state, and provides strategic suggestions via visual and vocal notifications (TTS).
 
 ---
 
-## Architettura
+## Architecture
 
-Il progetto segue un'architettura **multi-modulo** con separazione netta tra I/O, logica decisionale e presentazione:
+The project follows a **multi-module** architecture with a clear separation between I/O, decision logic, and presentation:
 
 ```
 LoL-Coach/
-├── bridge/          # I/O: comunicazione con le API locali di Riot (LCU + Live Client Data)
-├── brain/           # Logica: state machine, event processing, strategie di gioco
-├── app/             # Presentazione: Dashboard UI, Overlay, TTS (Compose Desktop)
+├── bridge/          # I/O: communication with Riot's local APIs (LCU + Live Client Data)
+├── brain/           # Logic: state machine, event processing, game strategies
+├── app/             # Presentation: Dashboard UI, Overlay, TTS (Compose Desktop)
 ├── gradle/
-│   ├── libs.versions.toml   # Version catalog centralizzato
+│   ├── libs.versions.toml   # Centralized version catalog
 │   └── wrapper/
 ├── build.gradle.kts          # Root build script
-├── settings.gradle.kts       # Configurazione multi-modulo
+├── settings.gradle.kts       # Multi-module configuration
 └── gradle.properties
 ```
 
-### Flusso Dati
+### Data Flow
 
 ```
                     ┌─────────────────────────────────────────────────────┐
@@ -30,13 +30,13 @@ LoL-Coach/
                     └──────┬────────────────────────┬─────────────────────┘
                            │                        │
                    LCU API (WebSocket)    Live Client Data API (HTTP polling)
-                   porta dinamica         porta 2999
+                   dynamic port           port 2999
                            │                        │
                     ┌──────▼────────────────────────▼─────────────────────┐
                     │                  BRIDGE MODULE                       │
                     │  LockfileMonitor → KtorClientFactory                │
                     │  LcuWebSocketClient    LiveClientPoller             │
-                    │  BridgeFacade (orchestratore)                       │
+                    │  BridgeFacade (orchestrator)                        │
                     └──────┬────────────────────────┬─────────────────────┘
                            │ SharedFlow             │ SharedFlow
                            │ <ChampSelectSession>   │ <GameSnapshot>
@@ -51,70 +51,70 @@ LoL-Coach/
                            │ SharedFlow<GameEvent>
                     ┌──────▼──────────────────────────────────────────────┐
                     │                    APP MODULE                        │
-                    │  Dashboard Window (finestra principale informativa) │
-                    │  Overlay Window (compatta, semi-trasparente)        │
-                    │  TTS Engine (notifiche vocali asincrone)            │
-                    │  AppLogger (log centralizzato con livelli)          │
+                    │  Dashboard Window (main informative window)          │
+                    │  Overlay Window (compact, semi-transparent)          │
+                    │  TTS Engine (asynchronous voice notifications)       │
+                    │  AppLogger (centralized log with levels)             │
                     └─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Stack Tecnologico
+## Technology Stack
 
-| Componente       | Tecnologia                                       | Versione  |
-|------------------|--------------------------------------------------|-----------|
-| Linguaggio       | Kotlin                                           | 2.1.20    |
-| Build System     | Gradle (Kotlin DSL + Version Catalog)            | 8.11      |
-| Networking       | Ktor Client (CIO engine + WebSocket)             | 3.1.1     |
-| UI               | Compose Multiplatform Desktop + Material 3       | 1.7.3     |
-| Concorrenza      | Kotlin Coroutines & Flow                         | 1.10.1    |
-| Serializzazione  | kotlinx.serialization (JSON)                     | 1.8.0     |
-| TTS              | System API (`say` macOS / `espeak` Linux) o Piper| —         |
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Language | Kotlin | 2.1.20 |
+| Build System | Gradle (Kotlin DSL + Version Catalog) | 8.11 |
+| Networking | Ktor Client (CIO engine + WebSocket) | 3.1.1 |
+| UI | Compose Multiplatform Desktop + Material 3 | 1.7.3 |
+| Concurrency | Kotlin Coroutines & Flow | 1.10.1 |
+| Serialization | kotlinx.serialization (JSON) | 1.8.0 |
+| TTS | System API (`say` macOS / `espeak` Linux) or Piper | — |
 
 ---
 
-## Moduli in Dettaglio
+## Detailed Modules
 
 ### Bridge Module (`bridge/`)
 
-Responsabile esclusivamente dell'I/O con le API locali di Riot. Nessuna logica decisionale.
+Responsible exclusively for I/O with Riot's local APIs. No decision logic.
 
-| Classe                   | Responsabilità                                                                                  |
-|--------------------------|-------------------------------------------------------------------------------------------------|
-| `LockfileReader`         | Parsing del file `lockfile` di LoL → estrae PID, porta, token, protocollo (`LockfileData`)     |
-| `LockfileMonitor`        | Polling coroutine-based (ogni 2s) per rilevare apertura/chiusura del client → `StateFlow<LockfileData?>` |
-| `KtorClientFactory`      | Factory per `HttpClient(CIO)` con bypass SSL self-signed, Basic Auth (base64), content negotiation JSON |
-| `LcuWebSocketClient`     | Connessione WebSocket alla LCU API → subscribe a `OnJsonApiEvent_lol-champ-select_v1_session` → `SharedFlow<ChampSelectSession>` |
-| `LiveClientPoller`       | HTTP polling ≤1Hz su `https://127.0.0.1:2999/liveclientdata/allgamedata` → `SharedFlow<GameSnapshot>` |
-| `RetryUtils`             | Utility `retryWithBackoff` con exponential backoff configurabile (delay iniziale, max delay, max retries) |
-| `BridgeFacade`           | Orchestratore: gestisce il ciclo di vita di tutti i componenti, espone i Flow al modulo consumer |
+| Class | Responsibility |
+|-------|----------------|
+| `LockfileReader` | Parses LoL's `lockfile` → extracts PID, port, token, protocol (`LockfileData`) |
+| `LockfileMonitor` | Coroutine-based polling (every 2s) to detect client open/close → `StateFlow<LockfileData?>` |
+| `KtorClientFactory` | Factory for `HttpClient(CIO)` with self-signed SSL bypass, Basic Auth (base64), JSON content negotiation |
+| `LcuWebSocketClient` | WebSocket connection to LCU API → subscribes to `OnJsonApiEvent_lol-champ-select_v1_session` → `SharedFlow<ChampSelectSession>` |
+| `LiveClientPoller` | HTTP polling ≤1Hz on `https://127.0.0.1:2999/liveclientdata/allgamedata` → `SharedFlow<GameSnapshot>` |
+| `RetryUtils` | `retryWithBackoff` utility with configurable exponential backoff (initial delay, max delay, max retries) |
+| `BridgeFacade` | Orchestrator: manages the lifecycle of all components, exposes Flow to the consumer module |
 
 **Data Models** (`bridge/model/`):
 - **LCU API**: `ChampSelectSession`, `ChampSelectPlayerSelection`, `ChampSelectAction`
 - **Live Client Data**: `GameSnapshot`, `ActivePlayer`, `ChampionStats`, `Abilities`, `FullRunes`, `Player`, `PlayerItem`, `PlayerScores`, `GameData`, `GameEvents`
-- **Interno**: `LockfileData`
+- **Internal**: `LockfileData`
 
 ### Brain Module (`brain/`)
 
-Logica decisionale pura. Nessuna dipendenza su rete o I/O.
+Pure decision logic. No dependencies on network or I/O.
 
-| Classe                   | Responsabilità                                                                                  |
-|--------------------------|-------------------------------------------------------------------------------------------------|
-| `GameStateMachine`       | Macchina a stati: `Idle` → `ChampSelect` → `Loading` → `InGame` → `PostGame` → `Idle`. Espone `StateFlow<GameState>` |
-| `EventProcessor`         | Riceve snapshot dal Bridge, applica le strategie, genera `GameEvent` con **deduplicazione** (evita notifiche ripetute) |
-| `Strategy` (interface)   | Contratto per le strategie: `evaluate(snapshot, state)` e `evaluateChampSelect(session, state)` |
-| `StrategyEngine`         | Registry estensibile delle strategie. Di default include le 3 strategie built-in               |
+| Class | Responsibility |
+|-------|----------------|
+| `GameStateMachine` | State machine: `Idle` → `ChampSelect` → `Loading` → `InGame` → `PostGame` → `Idle`. Exposes `StateFlow<GameState>` |
+| `EventProcessor` | Receives snapshots from Bridge, applies strategies, generates `GameEvent` with **deduplication** (avoids repeated notifications) |
+| `Strategy` (interface) | Strategy contract: `evaluate(snapshot, state)` and `evaluateChampSelect(session, state)` |
+| `StrategyEngine` | Extensible registry of strategies. By default includes the 3 built-in strategies |
 
-**Strategie Built-in**:
+**Built-in Strategies**:
 
-| Strategia               | Logica                                                                                          |
-|-------------------------|-------------------------------------------------------------------------------------------------|
-| `EarlyGameStrategy`     | Calcola i minion necessari per il livello 2 (prima wave = 6 melee + 3 caster; liv 2 a ~7 minion). Avvisa quando il threshold è vicino |
-| `VisionMacroStrategy`   | Se `gameTime > 10min` e l'inventario contiene ≥3 cariche ward, suggerisce posizionamento. Monitora Control Ward e Oracle Lens |
-| `ChampSelectStrategy`   | Analizza `myTeam`/`theirTeam` via LCU per: detection support nemico, suggerimenti sinergie ADC-Support (tabella hardcoded estendibile) |
+| Strategy | Logic |
+|----------|-------|
+| `EarlyGameStrategy` | Calculates minions needed for level 2 (first wave = 6 melee + 3 caster; level 2 at ~7 minions). Warns when threshold is near |
+| `VisionMacroStrategy` | If `gameTime > 10min` and inventory contains ≥3 ward charges, suggests warding. Monitors Control Ward and Oracle Lens |
+| `ChampSelectStrategy` | Analyzes `myTeam`/`theirTeam` via LCU for: enemy support detection, ADC-Support synergy suggestions (hardcoded, extensible table) |
 
-**Eventi Generati** (`GameEvent` sealed class):
+**Generated Events** (`GameEvent` sealed class):
 - `EnemySupportSelected` — Support nemico identificato in champ select
 - `Level2Approaching` — Countdown minion al livello 2
 - `Level2Reached` — Livello 2 raggiunto, finestra di trade

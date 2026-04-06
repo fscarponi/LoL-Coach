@@ -7,30 +7,30 @@ import com.lolcoach.brain.state.GameState
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
 
 /**
- * Strategia specifica per ARAM e ARAM Mayhem.
- * Consigli su teamfight, poke, health pack e snowball.
+ * Strategy specific to ARAM and ARAM Mayhem.
+ * Advice on teamfights, poke, health packs and snowballs.
  */
 class AramStrategy : Strategy {
 
     override val applicableGameModes = setOf(GameMode.ARAM, GameMode.ARAM_MAYHEM)
 
     companion object {
-        // Champion noti per poke pesante in ARAM
+        // Champions known for heavy poke in ARAM
         val POKE_CHAMPIONS = setOf(
             "Lux", "Xerath", "Ziggs", "Vel'Koz", "Jayce", "Nidalee",
             "Ezreal", "Varus", "Kog'Maw", "Zoe", "Seraphine", "Senna",
             "Caitlyn", "Jhin", "Ashe", "Morgana", "Brand", "Zyra"
         )
 
-        // Champion con engage forte in ARAM
+        // Champions with strong engage in ARAM
         val ENGAGE_CHAMPIONS = setOf(
             "Malphite", "Amumu", "Leona", "Nautilus", "Alistar", "Rakan",
             "Ornn", "Sejuani", "Zac", "Rell", "Thresh", "Blitzcrank"
         )
 
-        // Intervalli per i reminder (in secondi di game time)
+        // Intervals for reminders (in seconds of game time)
         const val HEALTH_PACK_FIRST_REMINDER = 120.0  // 2 min
-        const val HEALTH_PACK_INTERVAL = 300.0         // ogni 5 min
+        const val HEALTH_PACK_INTERVAL = 300.0         // every 5 min
         const val EARLY_GAME_END = 180.0               // 3 min
         const val MID_GAME_START = 480.0               // 8 min
     }
@@ -40,16 +40,16 @@ class AramStrategy : Strategy {
         val activePlayer = snapshot.activePlayer ?: return events
         val gameTime = snapshot.gameData?.gameTime ?: return events
 
-        // Poke warning: segnala champion nemici con poke pesante
+        // Poke warning: signal enemy champions with heavy poke
         detectPokeThreats(snapshot, events)
 
-        // Health pack reminder periodico
+        // Periodic health pack reminder
         checkHealthPackReminder(gameTime, events)
 
-        // Consigli teamfight basati sulla composizione
+        // Teamfight advice based on composition
         evaluateTeamfightAdvice(snapshot, gameTime, events)
 
-        // Snowball advice per support
+        // Snowball advice for support
         evaluateSnowballUsage(snapshot, gameTime, events)
 
         return events
@@ -98,38 +98,38 @@ class AramStrategy : Strategy {
         val enemyEngagers = enemies.count { it.championName in ENGAGE_CHAMPIONS }
         val allyEngagers = allies.count { it.championName in ENGAGE_CHAMPIONS }
 
-        // Consiglio early game
+        // Early game advice
         if (gameTime < EARLY_GAME_END) {
             events.add(
                 GameEvent.AramTeamfightTip(
-                    "Fase iniziale: farma in sicurezza, non forzare fight prima del livello 3"
+                    "Early game: farm safely, do not force fights before level 3"
                 )
             )
         }
 
-        // Se il nemico ha molto engage, consiglia di stare indietro
+        // If the enemy has heavy engage, advise to stay back
         if (enemyEngagers >= 2) {
             events.add(
                 GameEvent.AramTeamfightTip(
-                    "Il nemico ha $enemyEngagers engager! Stai dietro e peela per i carry"
+                    "The enemy has $enemyEngagers engagers! Stay back and peel for the carries"
                 )
             )
         }
 
-        // Se noi abbiamo engage, consiglia di seguire
+        // If we have engage, advise to follow up
         if (allyEngagers >= 1 && gameTime > EARLY_GAME_END) {
             events.add(
                 GameEvent.AramTeamfightTip(
-                    "Segui l'engage dei tuoi tank, prepara CC e shield"
+                    "Follow up on your tank's engage, prepare CC and shields"
                 )
             )
         }
 
-        // Mid-game: consiglio su obiettivi
+        // Mid-game: objective advice
         if (gameTime > MID_GAME_START) {
             events.add(
                 GameEvent.AramTeamfightTip(
-                    "Mid-game: forza fight dopo aver pokato, non andare all-in a vita piena del nemico"
+                    "Mid-game: force fights after poking, do not all-in when the enemy is full HP"
                 )
             )
         }
@@ -156,7 +156,7 @@ class AramStrategy : Strategy {
         if (hasSnowball) {
             events.add(
                 GameEvent.AramSnowballAdvice(
-                    "Usa snowball per engage o per raggiungere alleati in difficoltà"
+                    "Use snowball to engage or to reach allies in trouble"
                 )
             )
         }
