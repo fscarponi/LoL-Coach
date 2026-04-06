@@ -68,9 +68,9 @@ fun main() = application {
 
     // Connect bridge to event processor
     remember {
-        AppLogger.info("App", "Avvio LoL Support Strategist...")
+        AppLogger.info("App", "Starting LoL Support Strategist...")
         bridge.start()
-        AppLogger.info("Bridge", "Bridge avviato — monitoraggio lockfile e polling attivi")
+        AppLogger.info("Bridge", "Bridge started — lockfile monitoring and polling active")
 
         scope.launch {
             bridge.gameSnapshots.collect { snapshot ->
@@ -127,7 +127,7 @@ fun main() = application {
     val overlayGameMode by stateMachine.gameMode.collectAsState()
 
     Window(
-        onCloseRequest = { /* chiudi solo dalla dashboard */ },
+        onCloseRequest = { /* close only from dashboard */ },
         state = WindowState(
             size = DpSize(380.dp, 400.dp),
             position = WindowPosition(Alignment.TopEnd)

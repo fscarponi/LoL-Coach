@@ -4,8 +4,8 @@ import com.lolcoach.brain.state.GameMode
 import kotlinx.serialization.Serializable
 
 /**
- * Modello astratto di richiesta verso l'LLM.
- * Contiene tutte le informazioni strutturate che il coach può inviare al modello.
+ * Abstract model of a request to the LLM.
+ * Contains all structured information that the coach can send to the model.
  */
 @Serializable
 data class LlmRequest(

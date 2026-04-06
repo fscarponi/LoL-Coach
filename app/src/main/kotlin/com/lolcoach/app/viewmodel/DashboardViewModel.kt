@@ -64,9 +64,9 @@ class DashboardViewModel(
                     lockfilePort = data?.port
                 )
                 if (data != null) {
-                    AppLogger.info("Bridge", "Lockfile trovato — porta ${data.port}, PID ${data.pid}")
+                    AppLogger.info("Bridge", "Lockfile found — port ${data.port}, PID ${data.pid}")
                 } else {
-                    AppLogger.warn("Bridge", "Lockfile non trovato — client LoL non attivo")
+                    AppLogger.warn("Bridge", "Lockfile not found — LoL client not active")
                 }
             }
         }
@@ -81,7 +81,7 @@ class DashboardViewModel(
                 )
                 val gt = snapshot.gameData?.gameTime?.let { "%.1f".format(it) } ?: "?"
                 val playerCount = snapshot.allPlayers.size
-                AppLogger.debug("LiveClient", "Snapshot ricevuto — gameTime=$gt, players=$playerCount")
+                AppLogger.debug("LiveClient", "Snapshot received — gameTime=$gt, players=$playerCount")
             }
         }
 
@@ -115,11 +115,11 @@ class DashboardViewModel(
                     is GameState.InGame -> "InGame"
                     is GameState.PostGame -> "PostGame"
                 }
-                AppLogger.info("StateMachine", "Stato cambiato → $stateName")
+                AppLogger.info("StateMachine", "State changed → $stateName")
             }
         }
 
-        AppLogger.info("App", "LoL Support Strategist avviato")
+        AppLogger.info("App", "LoL Support Strategist started")
     }
 
     data class TimestampedGameEvent(

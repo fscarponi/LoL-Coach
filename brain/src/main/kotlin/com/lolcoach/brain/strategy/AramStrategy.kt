@@ -72,7 +72,7 @@ class AramStrategy : Strategy {
 
     private fun checkHealthPackReminder(gameTime: Double, events: MutableList<GameEvent>) {
         if (gameTime >= HEALTH_PACK_FIRST_REMINDER) {
-            // Emetti reminder a intervalli regolari (la dedup nel EventProcessor evita duplicati)
+            // Emit reminder at regular intervals (deduplication in EventProcessor avoids duplicates)
             val intervalIndex = ((gameTime - HEALTH_PACK_FIRST_REMINDER) / HEALTH_PACK_INTERVAL).toInt()
             val reminderTime = HEALTH_PACK_FIRST_REMINDER + (intervalIndex * HEALTH_PACK_INTERVAL)
             if (gameTime >= reminderTime && gameTime < reminderTime + 10) {

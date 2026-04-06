@@ -6,13 +6,13 @@ import com.lolcoach.bridge.model.lcu.ChampSelectSession
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
 
 /**
- * Costruisce LlmRequest a partire dai dati grezzi del bridge.
- * Centralizza la conversione dati bridge → modello LLM.
+ * Builds LlmRequest from raw bridge data.
+ * Centralizes bridge data → LLM model conversion.
  */
 object RequestBuilder {
 
     /**
-     * Costruisce una richiesta LLM dalla champion select.
+     * Builds an LLM request from the champion select session.
      */
     fun fromChampSelect(session: ChampSelectSession, gameMode: GameMode): LlmRequest {
         val myTeam = session.myTeam.mapNotNull { player ->
@@ -57,7 +57,7 @@ object RequestBuilder {
     }
 
     /**
-     * Costruisce una richiesta LLM dallo snapshot in-game.
+     * Builds an LLM request from an in-game snapshot.
      */
     fun fromGameSnapshot(snapshot: GameSnapshot, gameMode: GameMode): LlmRequest {
         val activePlayer = snapshot.activePlayer?.let { ap ->
@@ -123,65 +123,65 @@ object RequestBuilder {
     }
 
     /**
-     * Converte un LlmRequest in un prompt testuale leggibile dall'LLM.
+     * Converts an LlmRequest into a human-readable text prompt for the LLM.
      */
     fun toUserPrompt(request: LlmRequest): String = buildString {
         when (request.phase) {
             GamePhase.CHAMP_SELECT -> {
                 val cs = request.champSelect ?: return@buildString
                 appendLine("=== CHAMPION SELECT ===")
-                appendLine("Modalità: ${request.gameMode.displayName}")
-                if (cs.currentPhase.isNotBlank()) appendLine("Fase: ${cs.currentPhase}")
+                appendLine("Mode: ${request.gameMode.displayName}")
+                if (cs.currentPhase.isNotBlank()) appendLine("Phase: ${cs.currentPhase}")
 
                 val myTeamStr = cs.myTeam.joinToString(", ") { "${it.championName} (${it.assignedRole})" }
-                appendLine("Il mio team: ${myTeamStr.ifEmpty { "non ancora selezionato" }}")
+                appendLine("My team: ${myTeamStr.ifEmpty { "not yet selected" }}")
 
                 val enemyStr = cs.enemyTeam.joinToString(", ") { "${it.championName} (${it.assignedRole})" }
-                appendLine("Team nemico: ${enemyStr.ifEmpty { "non ancora visibile" }}")
+                appendLine("Enemy team: ${enemyStr.ifEmpty { "not yet visible" }}")
 
-                if (cs.bans.isNotEmpty()) appendLine("Ban: ${cs.bans.joinToString(", ")}")
-                if (cs.benchChampions.isNotEmpty()) appendLine("Bench disponibili: ${cs.benchChampions.joinToString(", ")}")
+                if (cs.bans.isNotEmpty()) appendLine("Bans: ${cs.bans.joinToString(", ")}")
+                if (cs.benchChampions.isNotEmpty()) appendLine("Bench available: ${cs.benchChampions.joinToString(", ")}")
 
-                appendLine("Io gioco Support.")
-                appendLine("Analizza la composizione e dammi i consigli strategici.")
+                appendLine("I am playing Support.")
+                appendLine("Analyze the composition and give me strategic advice.")
             }
 
             GamePhase.LOADING, GamePhase.IN_GAME -> {
                 val ig = request.inGame ?: return@buildString
                 appendLine("=== IN GAME (${formatTime(ig.gameTime)}) ===")
-                appendLine("Modalità: ${request.gameMode.displayName}")
-                if (ig.mapTerrain.isNotBlank()) appendLine("Terreno mappa: ${ig.mapTerrain}")
+                appendLine("Mode: ${request.gameMode.displayName}")
+                if (ig.mapTerrain.isNotBlank()) appendLine("Map terrain: ${ig.mapTerrain}")
 
                 ig.activePlayer?.let { ap ->
-                    appendLine("--- Il mio champion ---")
+                    appendLine("--- My champion ---")
                     appendLine("${ap.championName} Lv.${ap.level} | Gold: ${ap.currentGold.toInt()}")
-                    if (ap.keystoneRune.isNotBlank()) appendLine("Rune: ${ap.keystoneRune} (${ap.primaryTree}/${ap.secondaryTree})")
-                    ap.abilities?.let { appendLine("Abilità: Q${it.qLevel} W${it.wLevel} E${it.eLevel} R${it.rLevel}") }
+                    if (ap.keystoneRune.isNotBlank()) appendLine("Runes: ${ap.keystoneRune} (${ap.primaryTree}/${ap.secondaryTree})")
+                    ap.abilities?.let { appendLine("Abilities: Q${it.qLevel} W${it.wLevel} E${it.eLevel} R${it.rLevel}") }
                     ap.stats?.let { appendLine("HP: ${it.currentHealth.toInt()}/${it.maxHealth.toInt()} | AR:${it.armor.toInt()} MR:${it.magicResist.toInt()} | AD:${it.attackDamage.toInt()} AP:${it.abilityPower.toInt()} AH:${it.abilityHaste.toInt()}") }
                 }
 
                 if (ig.allies.isNotEmpty()) {
-                    appendLine("--- Alleati ---")
+                    appendLine("--- Allies ---")
                     ig.allies.forEach { p ->
-                        appendLine("${p.championName} Lv.${p.level} ${p.kills}/${p.deaths}/${p.assists} CS:${p.creepScore} WS:${"%.1f".format(p.wardScore)} | ${p.items.joinToString(", ")}${if (p.isDead) " [MORTO ${p.respawnTimer.toInt()}s]" else ""}")
+                        appendLine("${p.championName} Lv.${p.level} ${p.kills}/${p.deaths}/${p.assists} CS:${p.creepScore} WS:${"%.1f".format(p.wardScore)} | ${p.items.joinToString(", ")}${if (p.isDead) " [DEAD ${p.respawnTimer.toInt()}s]" else ""}")
                     }
                 }
 
                 if (ig.enemies.isNotEmpty()) {
-                    appendLine("--- Nemici ---")
+                    appendLine("--- Enemies ---")
                     ig.enemies.forEach { p ->
-                        appendLine("${p.championName} Lv.${p.level} ${p.kills}/${p.deaths}/${p.assists} CS:${p.creepScore} | ${p.items.joinToString(", ")}${if (p.isDead) " [MORTO ${p.respawnTimer.toInt()}s]" else ""}")
+                        appendLine("${p.championName} Lv.${p.level} ${p.kills}/${p.deaths}/${p.assists} CS:${p.creepScore} | ${p.items.joinToString(", ")}${if (p.isDead) " [DEAD ${p.respawnTimer.toInt()}s]" else ""}")
                     }
                 }
 
                 if (ig.recentEvents.isNotEmpty()) {
-                    appendLine("--- Eventi recenti ---")
+                    appendLine("--- Recent events ---")
                     ig.recentEvents.forEach { e ->
                         appendLine("[${formatTime(e.eventTime)}] ${e.eventName}: ${e.killerName} → ${e.victimName}")
                     }
                 }
 
-                appendLine("Io gioco Support. Dammi consigli strategici per la situazione attuale.")
+                appendLine("I am playing Support. Give me strategic advice for the current situation.")
             }
         }
     }

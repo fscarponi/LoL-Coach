@@ -3,15 +3,15 @@ package com.lolcoach.brain.llm.prompt
 import com.lolcoach.brain.state.GameMode
 
 /**
- * Carica i system prompt dai file .md nelle resources.
- * Fallback a prompt inline se il file non è disponibile.
+ * Loads system prompts from .md files in resources.
+ * Fallback to inline prompts if the file is not available.
  */
 object PromptLoader {
 
     private val cache = mutableMapOf<GameMode, String>()
 
     /**
-     * Restituisce il system prompt per la modalità specificata.
+     * Returns the system prompt for the specified game mode.
      */
     fun getSystemPrompt(gameMode: GameMode): String {
         return cache.getOrPut(gameMode) { loadFromResources(gameMode) }
@@ -33,15 +33,15 @@ object PromptLoader {
     }
 
     private fun fallbackPrompt(gameMode: GameMode): String = buildString {
-        appendLine("Sei un coach esperto di League of Legends, specializzato nel ruolo Support.")
-        appendLine("Rispondi SEMPRE in italiano. Sii conciso ma strategicamente preciso.")
-        appendLine("Modalità: ${gameMode.displayName}.")
+        appendLine("You are an expert League of Legends coach, specializing in the Support role.")
+        appendLine("Always answer in English. Be concise but strategically precise.")
+        appendLine("Mode: ${gameMode.displayName}.")
         appendLine()
-        appendLine("Rispondi con queste 4 sezioni (una per riga):")
-        appendLine("[COMP] Analisi composizione team")
-        appendLine("[WIN] Win condition dal punto di vista Support")
-        appendLine("[EVITA] Cosa evitare")
-        appendLine("[PRIORITA] Priorità chiave come Support")
-        appendLine("Ogni sezione max 150 caratteri, niente markdown.")
+        appendLine("Respond with these 4 sections (one per line):")
+        appendLine("[COMP] Team composition analysis")
+        appendLine("[WIN] Win condition from a Support perspective")
+        appendLine("[AVOID] What to avoid")
+        appendLine("[PRIORITY] Key priorities as Support")
+        appendLine("Each section max 150 characters, no markdown.")
     }
 }

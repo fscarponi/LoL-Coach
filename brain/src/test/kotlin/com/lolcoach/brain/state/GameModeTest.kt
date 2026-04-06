@@ -50,6 +50,6 @@ class GameModeTest {
         assertEquals("Summoner's Rift", GameMode.SUMMONERS_RIFT.displayName)
         assertEquals("ARAM", GameMode.ARAM.displayName)
         assertEquals("ARAM Mayhem", GameMode.ARAM_MAYHEM.displayName)
-        assertEquals("Sconosciuta", GameMode.UNKNOWN.displayName)
+        assertEquals("Unknown", GameMode.UNKNOWN.displayName)
     }
 }

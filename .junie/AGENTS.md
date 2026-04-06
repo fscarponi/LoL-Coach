@@ -56,7 +56,7 @@ Tests exist for critical components in `bridge/` and `brain/` modules:
 
 ## Code Style
 
-- **Language**: Kotlin throughout. Comments and documentation in the codebase are in Italian.
+- **Language**: Kotlin throughout. All code, comments, and documentation MUST be in English ONLY.
 - **Coroutines**: Use `StateFlow`/`SharedFlow` for shared state (thread-safe by design).
 - **Module boundaries**: `bridge` handles only I/O, `brain` contains only pure logic (no network dependencies), `app` handles presentation.
 - **Strategy pattern**: New strategies implement the `Strategy` interface and register in `StrategyEngine`.

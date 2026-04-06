@@ -45,10 +45,10 @@ class LlmCoachServiceTest {
     @Test
     fun `parses structured LLM response into 4 analysis events`() = runTest {
         val fakeResponse = """
-            [COMP] Team alleato ha buon engage con Leona, nemici hanno poke pesante con Xerath
-            [WIN] Forzare fight in spazi stretti dove il poke nemico è meno efficace
-            [EVITA] Non fare trade lunghi in lane contro Xerath, evita di essere pokato
-            [PRIORITA] Engaggiare al livello 2, controllare bush bot, proteggere ADC dal poke
+            [COMP] Allied team has good engage with Leona, enemies have heavy poke with Xerath
+            [WIN] Force fights in narrow spaces where enemy poke is less effective
+            [AVOID] Do not take long trades in lane against Xerath, avoid being poked down
+            [PRIORITY] Engage at level 2, control bot bushes, protect ADC from poke
         """.trimIndent()
 
         val provider = FakeLlmProvider(fakeResponse)
@@ -73,10 +73,10 @@ class LlmCoachServiceTest {
         assertTrue(collected.all { it is GameEvent.LlmAnalysis })
 
         val sections = collected.map { (it as GameEvent.LlmAnalysis).section }
-        assertTrue("Analisi Comp" in sections)
+        assertTrue("Comp Analysis" in sections)
         assertTrue("Win Condition" in sections)
-        assertTrue("Cosa Evitare" in sections)
-        assertTrue("Priorità" in sections)
+        assertTrue("What to Avoid" in sections)
+        assertTrue("Priority" in sections)
     }
 
     @Test
@@ -146,13 +146,13 @@ class LlmCoachServiceTest {
 
         assertEquals(1, collected.size)
         val event = collected[0] as GameEvent.LlmAnalysis
-        assertEquals("ERRORE", event.section)
+        assertEquals("ERROR", event.section)
         assertTrue(event.content.contains("Connection refused"))
     }
 
     @Test
     fun `falls back to raw response when format not respected`() = runTest {
-        val provider = FakeLlmProvider("Questa è una risposta non strutturata dal modello")
+        val provider = FakeLlmProvider("This is an unstructured response from the model")
         val service = LlmCoachService(this, provider)
 
         val collected = mutableListOf<GameEvent>()
@@ -168,8 +168,8 @@ class LlmCoachServiceTest {
 
         assertEquals(1, collected.size)
         val event = collected[0] as GameEvent.LlmAnalysis
-        assertEquals("Analisi LLM", event.section)
-        assertTrue(event.content.contains("risposta non strutturata"))
+        assertEquals("LLM Analysis", event.section)
+        assertTrue(event.content.contains("unstructured response"))
     }
 
     @Test

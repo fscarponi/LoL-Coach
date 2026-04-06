@@ -6,7 +6,7 @@ import com.lolcoach.bridge.model.lcu.ChampSelectSession
 import com.lolcoach.bridge.model.liveclient.GameSnapshot
 
 interface Strategy {
-    /** Modalità di gioco in cui questa strategia è attiva. */
+    /** Game modes in which this strategy is active. */
     val applicableGameModes: Set<GameMode>
         get() = setOf(GameMode.SUMMONERS_RIFT, GameMode.ARAM, GameMode.ARAM_MAYHEM, GameMode.UNKNOWN)
 

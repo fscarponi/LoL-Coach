@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lolcoach.app.i18n.Strings
 import com.lolcoach.app.logging.LogEntry
 import com.lolcoach.app.logging.LogLevel
 import com.lolcoach.app.viewmodel.ConnectionStatus
@@ -40,7 +41,7 @@ fun SectionHeader(title: String, emoji: String) {
     ) {
         Text(emoji, fontSize = 14.sp)
         Text(
-            text = title,
+            text = title.uppercase(),
             color = AccentBlue,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
@@ -49,28 +50,26 @@ fun SectionHeader(title: String, emoji: String) {
     }
 }
 
-// ─── Connection Panel ─────────────────────────────────────────
-
 @Composable
 fun ConnectionPanel(status: ConnectionStatus) {
     DashboardCard {
-        SectionHeader("CONNECTION", "🔌")
+        SectionHeader(Strings.Connection.uppercase(), "🔌")
 
         StatusRow(
-            label = "Lockfile",
+            label = Strings.Lockfile,
             active = status.lockfileFound,
-            detail = if (status.lockfileFound) "Port ${status.lockfilePort}" else "Not found"
+            detail = if (status.lockfileFound) "Port ${status.lockfilePort}" else Strings.NotFound
         )
         Spacer(Modifier.height(4.dp))
         StatusRow(
-            label = "Live Client",
+            label = Strings.LiveClient,
             active = status.liveClientActive,
             detail = if (status.liveClientActive) {
                 status.lastSnapshotTime?.let {
                     val ago = (System.currentTimeMillis() - it) / 1000
-                    "Last snapshot ${ago}s ago"
-                } ?: "Connected"
-            } else "Not active"
+                    Strings.lastSnapshot(ago)
+                } ?: Strings.Connected
+            } else Strings.NotActive
         )
     }
 }
@@ -99,11 +98,11 @@ fun StatusRow(label: String, active: Boolean, detail: String) {
 @Composable
 fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN) {
     val (stateName, stateColor, stateEmoji) = when (state) {
-        is GameState.Idle -> Triple("IDLE — Disconnected", AccentRed, "⏸️")
-        is GameState.ChampSelect -> Triple("CHAMPION SELECT", AccentOrange, "🎮")
-        is GameState.Loading -> Triple("LOADING", Color(0xFF_FFC107), "⏳")
-        is GameState.InGame -> Triple("IN GAME", AccentGreen, "⚔️")
-        is GameState.PostGame -> Triple("POST GAME", TextSecondary, "🏁")
+        is GameState.Idle -> Triple(Strings.Idle, AccentRed, "⏸️")
+        is GameState.ChampSelect -> Triple(Strings.ChampSelect, AccentOrange, "🎮")
+        is GameState.Loading -> Triple(Strings.Loading, Color(0xFF_FFC107), "⏳")
+        is GameState.InGame -> Triple(Strings.InGame, AccentGreen, "⚔️")
+        is GameState.PostGame -> Triple(Strings.PostGame, TextSecondary, "🏁")
     }
 
     val modeColor = when (gameMode) {
@@ -114,7 +113,7 @@ fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN) {
     }
 
     DashboardCard {
-        SectionHeader("STATO GIOCO", "🎯")
+        SectionHeader("Game State", "🎯")
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -148,24 +147,24 @@ fun GameStatePanel(state: GameState, gameMode: GameMode = GameMode.UNKNOWN) {
 @Composable
 fun GameInfoPanel(snapshot: GameSnapshot?) {
     DashboardCard {
-        SectionHeader("INFO PARTITA", "📊")
+        SectionHeader("GAME INFO", "📊")
 
         if (snapshot == null || snapshot.activePlayer == null) {
-            Text("Nessun dato di gioco disponibile", color = TextSecondary, fontSize = 12.sp)
+            Text("No game data available", color = TextSecondary, fontSize = 12.sp)
         } else {
             val ap = snapshot.activePlayer!!
             val gd = snapshot.gameData
 
             InfoRow("Summoner", ap.summonerName.ifEmpty { ap.riotId })
-            InfoRow("Livello", "${ap.level}")
+            InfoRow("Level", "${ap.level}")
             InfoRow("Gold", "%.0f".format(ap.currentGold))
 
             if (gd != null) {
                 val minutes = (gd.gameTime / 60).toInt()
                 val seconds = (gd.gameTime % 60).toInt()
-                InfoRow("Tempo", "%d:%02d".format(minutes, seconds))
-                InfoRow("Modalità", gd.gameMode)
-                InfoRow("Mappa", gd.mapName.ifEmpty { "Mappa ${gd.mapNumber}" })
+                InfoRow("Time", "%d:%02d".format(minutes, seconds))
+                InfoRow("Mode", gd.gameMode)
+                InfoRow("Map", gd.mapName.ifEmpty { "Map ${gd.mapNumber}" })
             }
 
             ap.championStats?.let { stats ->
@@ -211,23 +210,23 @@ fun StatChip(label: String, value: String) {
 @Composable
 fun PlayersPanel(snapshot: GameSnapshot?) {
     DashboardCard {
-        SectionHeader("GIOCATORI", "👥")
+        SectionHeader("Players", "👥")
 
         if (snapshot == null || snapshot.allPlayers.isEmpty()) {
-            Text("Nessun giocatore rilevato", color = TextSecondary, fontSize = 12.sp)
+            Text("No players detected", color = TextSecondary, fontSize = 12.sp)
         } else {
             val allies = snapshot.allPlayers.filter { it.team == "ORDER" }
             val enemies = snapshot.allPlayers.filter { it.team == "CHAOS" }
 
             if (allies.isNotEmpty()) {
-                Text("🔵 Alleati", color = AccentBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("🔵 Allies", color = AccentBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 allies.forEach { player ->
                     PlayerRow(player.championName, player.position, player.scores, Color(0xFF_58A6FF))
                 }
             }
             if (enemies.isNotEmpty()) {
                 Spacer(Modifier.height(4.dp))
-                Text("🔴 Nemici", color = AccentRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("🔴 Enemies", color = AccentRed, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 enemies.forEach { player ->
                     PlayerRow(player.championName, player.position, player.scores, AccentRed)
                 }
@@ -286,13 +285,11 @@ fun LlmAnalysisPanel(
     modifier: Modifier = Modifier
 ) {
     DashboardCard(modifier = modifier) {
-        SectionHeader("ANALISI LLM COACH", "🧠")
+        SectionHeader("LLM Coach Analysis", "🧠")
 
         if (analyses.isEmpty()) {
             Text(
-                "In attesa della champion select per l'analisi LLM...",
-                color = TextSecondary,
-                fontSize = 12.sp
+                "Waiting for champion select for LLM analysis...", color = TextSecondary, fontSize = 12.sp
             )
         } else {
             val listState = rememberLazyListState()
@@ -312,11 +309,11 @@ fun LlmAnalysisPanel(
 @Composable
 fun LlmAnalysisRow(analysis: GameEvent.LlmAnalysis) {
     val (icon, color) = when (analysis.section) {
-        "Analisi Comp" -> "📊" to AccentBlue
+        "Comp Analysis" -> "📊" to AccentBlue
         "Win Condition" -> "🏆" to AccentGreen
-        "Cosa Evitare" -> "⚠️" to AccentRed
-        "Priorità" -> "🎯" to AccentOrange
-        "ERRORE" -> "❌" to AccentRed
+        "What to Avoid" -> "⚠️" to AccentRed
+        "Priority" -> "🎯" to AccentOrange
+        "ERROR" -> "❌" to AccentRed
         else -> "🧠" to Color(0xFF_7C4DFF)
     }
 
@@ -351,10 +348,10 @@ fun EventsPanel(
     modifier: Modifier = Modifier
 ) {
     DashboardCard(modifier = modifier) {
-        SectionHeader("EVENTI STRATEGIA", "🧠")
+        SectionHeader("Strategy Events", "🧠")
 
         if (events.isEmpty()) {
-            Text("Nessun evento generato", color = TextSecondary, fontSize = 12.sp)
+            Text("No events generated", color = TextSecondary, fontSize = 12.sp)
         } else {
             val listState = rememberLazyListState()
             LazyColumn(
@@ -425,11 +422,11 @@ fun LogPanel(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            SectionHeader("LOG", "📋")
+            SectionHeader("Logs", "📋")
             Spacer(Modifier.weight(1f))
 
             // Filter chips
-            LogFilterChip("Tutti", selected = selectedLevel == null) { onFilterChanged(null) }
+            LogFilterChip("All", selected = selectedLevel == null) { onFilterChanged(null) }
             LogLevel.entries.forEach { level ->
                 LogFilterChip(
                     level.emoji,

@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 /**
- * Servizio che usa un LLM per generare analisi approfondite durante champ select e loading.
- * Produce GameEvent.LlmAnalysis con sezioni: Analisi Comp, Win Condition, Cosa Evitare, Priorità.
+ * Service that uses an LLM to generate in-depth analysis during champ select and loading.
+ * Produces GameEvent.LlmAnalysis with sections: Comp Analysis, Win Condition, What to Avoid, Priority.
  *
- * Usa PromptLoader per caricare i system prompt dai file .md per modalità,
- * e RequestBuilder per costruire richieste strutturate.
+ * Uses PromptLoader to load system prompts from .md files for different game modes,
+ * and RequestBuilder to build structured requests.
  */
 class LlmCoachService(
     private val scope: CoroutineScope,
@@ -37,8 +37,8 @@ class LlmCoachService(
 
     companion object {
         /**
-         * Costruisce il system prompt per la modalità specificata.
-         * Usa PromptLoader per caricare dai file .md nelle resources.
+         * Builds the system prompt for the specified game mode.
+         * Uses PromptLoader to load from .md files in resources.
          */
         fun buildSystemPrompt(gameMode: GameMode): String = PromptLoader.getSystemPrompt(gameMode)
 
@@ -47,8 +47,8 @@ class LlmCoachService(
     }
 
     /**
-     * Analizza la champion select corrente tramite LLM.
-     * Evita analisi duplicate per la stessa sessione.
+     * Analyzes the current champion select via LLM.
+     * Avoids duplicate analysis for the same session.
      */
     fun analyzeChampSelect(session: ChampSelectSession) {
         val sessionKey = buildSessionKey(session)
@@ -65,14 +65,14 @@ class LlmCoachService(
                 emitAnalysis(response)
             } catch (e: Exception) {
                 _analysisEvents.emit(
-                    GameEvent.LlmAnalysis("ERRORE", "LLM non disponibile: ${e.message?.take(80)}")
+                    GameEvent.LlmAnalysis("ERROR", "LLM not available: ${e.message?.take(80)}")
                 )
             }
         }
     }
 
     /**
-     * Reset per nuova partita.
+     * Reset for a new game.
      */
     fun reset() {
         lastAnalyzedSession = ""
@@ -91,7 +91,7 @@ class LlmCoachService(
     }
 
     /**
-     * Parsa la risposta grezza dell'LLM in un LlmResponse strutturato.
+     * Parses the raw LLM response into a structured LlmResponse.
      */
     internal fun parseResponse(rawResponse: String): LlmResponse {
         val sections = mutableListOf<AnalysisSection>()
@@ -120,8 +120,8 @@ class LlmCoachService(
                 _analysisEvents.emit(GameEvent.LlmAnalysis(section.label, section.content))
             }
         } else {
-            // Fallback: il modello non ha rispettato il formato
-            _analysisEvents.emit(GameEvent.LlmAnalysis("Analisi LLM", response.rawText.take(500)))
+            // Fallback: the model did not respect the format
+            _analysisEvents.emit(GameEvent.LlmAnalysis("LLM Analysis", response.rawText.take(500)))
         }
     }
 }

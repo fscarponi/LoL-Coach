@@ -115,95 +115,127 @@ Pure decision logic. No dependencies on network or I/O.
 | `ChampSelectStrategy` | Analyzes `myTeam`/`theirTeam` via LCU for: enemy support detection, ADC-Support synergy suggestions (hardcoded, extensible table) |
 
 **Generated Events** (`GameEvent` sealed class):
-- `EnemySupportSelected` — Support nemico identificato in champ select
-- `Level2Approaching` — Countdown minion al livello 2
-- `Level2Reached` — Livello 2 raggiunto, finestra di trade
-- `VisionNeeded` — Suggerimento ward con motivazione
-- `DragonTimerWarning` — Timer pre-dragon per preparare visione
-- `ItemSuggestion` — Suggerimento item con motivazione
-- `SynergyAdvice` — Consiglio sinergia ADC-Support
-- `GenericTip` — Suggerimento generico
+- `EnemySupportSelected` — Enemy support identified in champ select
+- `Level2Approaching` — Minion countdown to level 2
+- `Level2Reached` — Level 2 reached, trade window
+- `VisionNeeded` — Warding suggestion with reason
+- `DragonTimerWarning` — Pre-dragon timer to prepare vision
+- `ItemSuggestion` — Item suggestion with reason
+- `SynergyAdvice` — ADC-Support synergy advice
+- `GenericTip` — Generic suggestion
 
 ### App Module (`app/`)
 
-Interfaccia utente e output audio. Due finestre parallele + sistema TTS.
+User interface and audio output. Two parallel windows + TTS system.
 
-#### Dashboard Window (finestra principale)
+#### Dashboard Window (main window)
 
-Finestra decorata, ridimensionabile (1100×700), con tema dark. Layout a due colonne:
+Decorated window, resizable (1100×700), with dark theme. Two-column layout:
 
-| Pannello (colonna sx)    | Contenuto                                                                        |
+| Panel (left column)    | Content                                                                        |
 |--------------------------|----------------------------------------------------------------------------------|
-| `ConnectionPanel`        | Stato connessione lockfile (porta, PID) e Live Client Data (attivo/inattivo)     |
-| `GameStatePanel`         | Fase corrente di gioco con indicatore colorato                                   |
-| `GameInfoPanel`          | Statistiche champion attivo: livello, HP, gold, CS                               |
-| `PlayersPanel`           | Lista alleati e nemici con champion, KDA, livello                                |
+| `ConnectionPanel`        | Lockfile connection status (port, PID) and Live Client Data (active/inactive)    |
+| `GameStatePanel`         | Current game phase with colored indicator                                        |
+| `GameInfoPanel`          | Active champion stats: level, HP, gold, CS                                       |
+| `PlayersPanel`           | Allies and enemies list with champion, KDA, level                                |
 
-| Pannello (colonna dx)    | Contenuto                                                                        |
+| Panel (right column)    | Content                                                                        |
 |--------------------------|----------------------------------------------------------------------------------|
-| `EventsPanel`            | Storico eventi strategia con timestamp, scrollabile                              |
-| `LogPanel`               | Log applicativi real-time con filtri chip per livello (DEBUG, INFO, WARN, ERROR, EVENT) |
+| `EventsPanel`            | Strategy event history with timestamp, scrollable                                |
+| `LogPanel`               | Real-time application logs with level filter chips (DEBUG, INFO, WARN, ERROR, EVENT) |
 
-#### Overlay Window (finestra compatta)
+#### Overlay Window (compact window)
 
-- **Semi-trasparente** (`alpha = 0.85`) con contorni visibili
-- `alwaysOnTop = true` — resta sopra il gioco
-- `focusable = false` — non cattura click né focus, evita misclick involontari
+- **Semi-transparent** (`alpha = 0.85`) with visible borders
+- `alwaysOnTop = true` — stays on top of the game
+- `focusable = false` — does not capture clicks or focus, avoids involuntary misclicks
 - `undecorated = true`, `transparent = true`
-- Mostra gli ultimi 5 eventi con fade-out automatico (8 secondi)
-- Notifiche colorate per tipo di evento (arancione per combat, verde per achievement, rosso per nemici, blu per visione, ecc.)
+- Shows the last 5 events with automatic fade-out (8 seconds)
+- Colored notifications by event type (orange for combat, green for achievement, red for enemies, blue for vision, etc.)
 
-#### Sistema TTS
+#### TTS System
 
-| Classe               | Descrizione                                                                            |
+| Class               | Description                                                                            |
 |----------------------|----------------------------------------------------------------------------------------|
-| `TtsManager`         | Interfaccia comune per i motori TTS                                                    |
-| `SystemTtsManager`   | Usa `ProcessBuilder` → `say` (macOS) o `espeak` (Linux)                               |
-| `PiperTtsManager`    | Invoca il binario Piper come processo esterno con pipe stdin/stdout                    |
-| `TtsEventListener`   | Sottoscrive `SharedFlow<GameEvent>`, converte in testo, esegue TTS con coda asincrona su `Dispatchers.IO` |
+| `TtsManager`         | Common interface for TTS engines                                                       |
+| `SystemTtsManager`   | Uses `ProcessBuilder` → `say` (macOS) or `espeak` (Linux)                               |
+| `PiperTtsManager`    | Invokes the Piper binary as an external process with stdin/stdout pipe                    |
+| `TtsEventListener`   | Subscribes to `SharedFlow<GameEvent>`, converts to text, executes TTS with async queue on `Dispatchers.IO` |
 
-#### Sistema di Logging
+#### Logging System
 
-| Classe      | Descrizione                                                                                        |
+| Class      | Description                                                                                        |
 |-------------|----------------------------------------------------------------------------------------------------|
-| `AppLogger` | Singleton centralizzato con `StateFlow<List<LogEntry>>`. 5 livelli (DEBUG, INFO, WARN, ERROR, EVENT). Buffer circolare di max 500 entry |
+| `AppLogger` | Centralized singleton with `StateFlow<List<LogEntry>>`. 5 levels (DEBUG, INFO, WARN, ERROR, EVENT). Circular buffer of max 500 entries |
 
 ---
 
-## Requisiti
+## Requirements
 
 - **JDK 21+**
-- **League of Legends** installato e in esecuzione (per le API locali)
-- **macOS / Windows / Linux** (Compose Desktop è cross-platform)
+- **League of Legends** installed and running (for local APIs)
+- **macOS / Windows / Linux** (Compose Desktop is cross-platform)
 
-### API Riot Utilizzate
+### Riot APIs Used
 
-| API                     | Endpoint                                              | Auth         | Uso                        |
+| API                     | Endpoint                                              | Auth         | Use                        |
 |-------------------------|-------------------------------------------------------|--------------|----------------------------|
 | LCU API (WebSocket)     | `wss://127.0.0.1:{port}/`                             | Basic Auth   | Champion Select events     |
-| Live Client Data API    | `https://127.0.0.1:2999/liveclientdata/allgamedata`   | Nessuna      | Dati in-game real-time     |
+| Live Client Data API    | `https://127.0.0.1:2999/liveclientdata/allgamedata`   | None         | Real-time in-game data     |
 
-> **Nota**: entrambe le API usano certificati SSL self-signed di Riot. Il client Ktor è configurato per accettarli.
+> **Note**: both APIs use self-signed SSL certificates from Riot. The Ktor client is configured to accept them.
+
+---
+
+### LLM Module (`brain/llm/`)
+
+Advanced analysis using Large Language Models (LLM) for champion select and game loading.
+
+| Class | Responsibility |
+|-------|----------------|
+| `LlmCoachService` | Orchestrates LLM requests, parses structured responses into `GameEvent.LlmAnalysis` sections. |
+| `LlmProvider` | Abstract interface for LLM backends. |
+| `OpenAiCompatibleProvider` | Provider for OpenAI, Ollama, LM Studio, etc. |
+| `GeminiProvider` | Dedicated provider for Google Gemini API (1.5 Flash/Pro). |
+| `RequestBuilder` | Builds structured JSON prompts from `ChampSelectSession` and `GameSnapshot`. |
+| `PromptLoader` | Loads specialized System Prompts from `.md` files in resources for different game modes. |
+
+---
+
+## Configuration
+
+The application can be configured via environment variables, especially for LLM integration:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `LLM_ENABLED` | Enable or disable LLM analysis | `true` |
+| `LLM_PROVIDER` | `GEMINI` or `OPENAI_COMPATIBLE` | `OPENAI_COMPATIBLE` |
+| `GEMINI_API_KEY` | API Key for Google AI Studio | — |
+| `OPENAI_API_KEY` | API Key for OpenAI | — |
+| `LLM_MODEL` | Model name (e.g. `gemini-1.5-flash`, `gpt-4o-mini`, `llama3`) | based on provider |
+| `LLM_BASE_URL` | Base URL for OpenAI compatible APIs | `http://localhost:11434/v1` (Ollama) |
+| `LLM_TEMPERATURE` | Generation temperature (0.0 to 1.0/2.0) | `0.7` |
+| `LLM_MAX_TOKENS` | Maximum tokens in the response | `1024` |
 
 ---
 
 ## Build & Run
 
 ```bash
-# Build completo (tutti i moduli)
+# Full build (all modules)
 ./gradlew build
 
-# Esegui l'applicazione
+# Run the application
 ./gradlew :app:run
 
-# Esegui tutti i test
+# Run all tests
 ./gradlew test
 
-# Test di un singolo modulo
+# Test a single module
 ./gradlew :bridge:test
 ./gradlew :brain:test
 
-# Distribuzione nativa
+# Native distribution
 ./gradlew :app:packageDmg    # macOS (.dmg)
 ./gradlew :app:packageMsi    # Windows (.msi)
 ./gradlew :app:packageDeb    # Linux (.deb)
@@ -213,74 +245,74 @@ Finestra decorata, ridimensionabile (1100×700), con tema dark. Layout a due col
 
 ## Test
 
-Il progetto include test unitari per i componenti critici:
+The project includes unit tests for critical components:
 
-| Modulo   | Test                              | Copertura                                                  |
+| Module   | Test                              | Coverage                                                   |
 |----------|-----------------------------------|------------------------------------------------------------|
-| `bridge` | `LockfileReaderTest`              | Parsing del lockfile: formato valido, campi estratti       |
-| `bridge` | `ChampSelectDeserializationTest`  | Deserializzazione JSON LCU → `ChampSelectSession`          |
-| `bridge` | `GameSnapshotDeserializationTest` | Deserializzazione JSON Live Client → `GameSnapshot`        |
-| `brain`  | `GameStateMachineTest`            | Transizioni di stato: tutti i percorsi e edge case (9 test)|
-| `brain`  | `EarlyGameStrategyTest`           | Calcolo minion livello 2, threshold, eventi generati       |
-| `brain`  | `VisionMacroStrategyTest`         | Logica ward, timing, Oracle Lens                           |
-| `brain`  | `ChampSelectStrategyTest`         | Detection support nemico, sinergie ADC-Support             |
+| `bridge` | `LockfileReaderTest`              | Lockfile parsing: valid format, extracted fields           |
+| `bridge` | `ChampSelectDeserializationTest`  | LCU JSON deserialization → `ChampSelectSession`            |
+| `bridge` | `GameSnapshotDeserializationTest` | Live Client JSON deserialization → `GameSnapshot`          |
+| `brain`  | `GameStateMachineTest`            | State transitions: all paths and edge cases (9 tests)      |
+| `brain`  | `EarlyGameStrategyTest`           | Level 2 minion calculation, threshold, events generated    |
+| `brain`  | `VisionMacroStrategyTest`         | Ward logic, timing, Oracle Lens                            |
+| `brain`  | `ChampSelectStrategyTest`         | Enemy support detection, ADC-Support synergies             |
 
 ---
 
-## Vincoli di Sicurezza e Performance
+## Security and Performance Constraints
 
-- **Polling ≤1Hz**: massimo 1 richiesta/secondo verso la Live Client Data API per non impattare le performance di gioco.
-- **Separazione I/O / Logica**: il modulo `bridge` non contiene logica decisionale; il `brain` non ha dipendenze su rete.
-- **Thread Safety**: tutti gli stati condivisi usano `StateFlow`/`SharedFlow` (inherently thread-safe).
-- **Retry con Exponential Backoff**: per le connessioni LCU e Live Client Data.
-- **Graceful Degradation**: se il client LoL non è disponibile o il lockfile scompare mid-game, l'app continua senza crash.
-- **Overlay Non Intrusivo**: `focusable=false` + semi-trasparenza per evitare interferenze con il gioco.
+- **Polling ≤1Hz**: maximum 1 request/second to the Live Client Data API to avoid impacting game performance.
+- **I/O / Logic Separation**: the `bridge` module contains no decision logic; the `brain` has no network dependencies.
+- **Thread Safety**: all shared states use `StateFlow`/`SharedFlow` (inherently thread-safe).
+- **Retry with Exponential Backoff**: for LCU and Live Client Data connections.
+- **Graceful Degradation**: if the LoL client is unavailable or the lockfile disappears mid-game, the app continues without crashing.
+- **Non-Intrusive Overlay**: `focusable=false` + semi-transparency to avoid interfering with the game.
 
 ---
 
-## Estensibilità
+## Extensibility
 
-### Aggiungere una nuova Strategia
+### Adding a new Strategy
 
-1. Implementare l'interfaccia `Strategy`:
+1. Implement the `Strategy` interface:
 
 ```kotlin
 class MyCustomStrategy : Strategy {
     override fun evaluate(snapshot: GameSnapshot, state: GameState): List<GameEvent> {
-        // Logica in-game personalizzata
+        // Custom in-game logic
         if (snapshot.gameData?.gameTime ?: 0.0 > 1200.0) {
-            return listOf(GameEvent.GenericTip("Baron tra poco, prepara la visione!"))
+            return listOf(GameEvent.GenericTip("Baron soon, prepare vision!"))
         }
         return emptyList()
     }
 
     override fun evaluateChampSelect(session: ChampSelectSession, state: GameState): List<GameEvent> {
-        // Logica champ select personalizzata (opzionale)
+        // Custom champ select logic (optional)
         return emptyList()
     }
 }
 ```
 
-2. Registrarla nel `StrategyEngine`:
+2. Register it in the `StrategyEngine`:
 
 ```kotlin
 strategyEngine.addStrategy(MyCustomStrategy())
 ```
 
-### Aggiungere un nuovo GameEvent
+### Adding a new GameEvent
 
-1. Aggiungere un nuovo case alla sealed class `GameEvent` in `brain/event/GameEvent.kt`.
-2. Aggiungere la chiave di deduplicazione in `EventProcessor.deduplicationKey()`.
-3. (Opzionale) Aggiungere colore e icona in `OverlayPanel.EventCard()`.
+1. Add a new case to the `GameEvent` sealed class in `brain/event/GameEvent.kt`.
+2. Add the deduplication key in `EventProcessor.deduplicationKey()`.
+3. (Optional) Add color and icon in `OverlayPanel.EventCard()`.
 
-### Aggiungere un nuovo motore TTS
+### Adding a new TTS Engine
 
-Implementare l'interfaccia `TtsManager`:
+Implement the `TtsManager` interface:
 
 ```kotlin
 class MyTtsEngine : TtsManager {
     override suspend fun speak(text: String) {
-        // Implementazione custom
+        // Custom implementation
     }
     override fun stop() { }
 }
@@ -288,7 +320,7 @@ class MyTtsEngine : TtsManager {
 
 ---
 
-## Licenza
+## License
 
-Progetto personale. Non affiliato con Riot Games.  
-League of Legends e tutti i relativi asset sono proprietà di Riot Games, Inc.
+Personal project. Not affiliated with Riot Games.  
+League of Legends and all related assets are property of Riot Games, Inc.

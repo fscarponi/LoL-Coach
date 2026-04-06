@@ -3,7 +3,7 @@ package com.lolcoach.brain.llm.model
 import kotlinx.serialization.Serializable
 
 /**
- * Modello astratto della risposta dall'LLM, strutturata in sezioni.
+ * Abstract model of the response from the LLM, structured in sections.
  */
 @Serializable
 data class LlmResponse(
@@ -18,12 +18,12 @@ data class AnalysisSection(
     val content: String
 ) {
     companion object {
-        /** Tag supportati e le loro label leggibili */
+        /** Supported tags and their readable labels */
         val KNOWN_TAGS = mapOf(
-            "COMP" to "Analisi Comp",
+            "COMP" to "Comp Analysis",
             "WIN" to "Win Condition",
-            "EVITA" to "Cosa Evitare",
-            "PRIORITA" to "Priorità"
+            "AVOID" to "What to Avoid",
+            "PRIORITY" to "Priority"
         )
     }
 }
