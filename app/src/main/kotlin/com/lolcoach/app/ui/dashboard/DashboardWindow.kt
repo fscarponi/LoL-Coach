@@ -30,6 +30,7 @@ fun DashboardContent(viewModel: DashboardViewModel) {
     val currentState by viewModel.currentState.collectAsState()
     val lastSnapshot by viewModel.lastSnapshot.collectAsState()
     val allEvents by viewModel.allEvents.collectAsState()
+    val llmAnalysis by viewModel.llmAnalysis.collectAsState()
     val filteredLogs by viewModel.filteredLogs.collectAsState()
     val selectedLogLevel by viewModel.selectedLogLevel.collectAsState()
 
@@ -60,20 +61,24 @@ fun DashboardContent(viewModel: DashboardViewModel) {
                 PlayersPanel(lastSnapshot)
             }
 
-            // Right column: Events + Logs
+            // Right column: LLM Analysis + Events + Logs
             Column(
                 modifier = Modifier.weight(1.5f).fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                LlmAnalysisPanel(
+                    analyses = llmAnalysis,
+                    modifier = Modifier.weight(0.3f)
+                )
                 EventsPanel(
                     events = allEvents,
-                    modifier = Modifier.weight(0.4f)
+                    modifier = Modifier.weight(0.3f)
                 )
                 LogPanel(
                     logs = filteredLogs,
                     selectedLevel = selectedLogLevel,
                     onFilterChanged = { viewModel.setLogFilter(it) },
-                    modifier = Modifier.weight(0.6f)
+                    modifier = Modifier.weight(0.4f)
                 )
             }
         }

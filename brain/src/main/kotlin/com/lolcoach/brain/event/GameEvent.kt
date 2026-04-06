@@ -32,4 +32,11 @@ sealed class GameEvent {
     }
 
     data class GenericTip(override val message: String) : GameEvent()
+
+    data class LlmAnalysis(
+        val section: String,
+        val content: String
+    ) : GameEvent() {
+        override val message = "[$section] $content"
+    }
 }

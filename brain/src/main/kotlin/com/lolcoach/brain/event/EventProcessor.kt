@@ -55,6 +55,16 @@ class EventProcessor(
         }
     }
 
+    /**
+     * Emette un evento esterno (es. da LLM) nel flusso principale.
+     */
+    suspend fun emitEvent(event: GameEvent) {
+        val key = event.deduplicationKey()
+        if (emittedEvents.add(key)) {
+            _events.emit(event)
+        }
+    }
+
     fun resetDeduplication() {
         emittedEvents.clear()
     }
@@ -68,5 +78,6 @@ class EventProcessor(
         is GameEvent.ItemSuggestion -> "item_$item"
         is GameEvent.SynergyAdvice -> "synergy_$advice"
         is GameEvent.GenericTip -> "tip_$message"
+        is GameEvent.LlmAnalysis -> "llm_${section}_$content"
     }
 }

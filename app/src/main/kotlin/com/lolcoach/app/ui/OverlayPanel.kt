@@ -43,6 +43,7 @@ fun EventCard(event: GameEvent) {
         is GameEvent.ItemSuggestion -> Color(0xAA_FFD600) to "🛒"
         is GameEvent.SynergyAdvice -> Color(0xAA_00BFA5) to "🤝"
         is GameEvent.GenericTip -> Color(0xAA_546E7A) to "💡"
+        is GameEvent.LlmAnalysis -> Color(0xAA_7C4DFF) to "🧠"
     }
 
     Box(

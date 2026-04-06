@@ -36,6 +36,9 @@ class DashboardViewModel(
     private val _allEvents = MutableStateFlow<List<TimestampedGameEvent>>(emptyList())
     val allEvents: StateFlow<List<TimestampedGameEvent>> = _allEvents.asStateFlow()
 
+    private val _llmAnalysis = MutableStateFlow<List<GameEvent.LlmAnalysis>>(emptyList())
+    val llmAnalysis: StateFlow<List<GameEvent.LlmAnalysis>> = _llmAnalysis.asStateFlow()
+
     val logs: StateFlow<List<LogEntry>> = AppLogger.logs
 
     private val _selectedLogLevel = MutableStateFlow<LogLevel?>(null)
@@ -88,6 +91,14 @@ class DashboardViewModel(
                 if (current.size > 100) current.removeAt(current.lastIndex)
                 _allEvents.value = current
                 AppLogger.event("Strategy", event.message)
+
+                // Track LLM analysis separately
+                if (event is GameEvent.LlmAnalysis) {
+                    val currentLlm = _llmAnalysis.value.toMutableList()
+                    currentLlm.add(event)
+                    if (currentLlm.size > 20) currentLlm.removeAt(0)
+                    _llmAnalysis.value = currentLlm
+                }
             }
         }
 

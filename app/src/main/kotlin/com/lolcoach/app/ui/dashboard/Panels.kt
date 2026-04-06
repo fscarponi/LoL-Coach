@@ -257,6 +257,71 @@ fun PlayerRow(
     }
 }
 
+// ─── LLM Analysis Panel ───────────────────────────────────────
+
+@Composable
+fun LlmAnalysisPanel(
+    analyses: List<GameEvent.LlmAnalysis>,
+    modifier: Modifier = Modifier
+) {
+    DashboardCard(modifier = modifier) {
+        SectionHeader("ANALISI LLM COACH", "🧠")
+
+        if (analyses.isEmpty()) {
+            Text(
+                "In attesa della champion select per l'analisi LLM...",
+                color = TextSecondary,
+                fontSize = 12.sp
+            )
+        } else {
+            val listState = rememberLazyListState()
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items(analyses) { analysis ->
+                    LlmAnalysisRow(analysis)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LlmAnalysisRow(analysis: GameEvent.LlmAnalysis) {
+    val (icon, color) = when (analysis.section) {
+        "Analisi Comp" -> "📊" to AccentBlue
+        "Win Condition" -> "🏆" to AccentGreen
+        "Cosa Evitare" -> "⚠️" to AccentRed
+        "Priorità" -> "🎯" to AccentOrange
+        "ERRORE" -> "❌" to AccentRed
+        else -> "🧠" to Color(0xFF_7C4DFF)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(color.copy(alpha = 0.1f))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        Text(
+            "$icon ${analysis.section}",
+            color = color,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            analysis.content,
+            color = TextPrimary,
+            fontSize = 12.sp,
+            lineHeight = 16.sp
+        )
+    }
+}
+
 // ─── Events Panel ─────────────────────────────────────────────
 
 @Composable
@@ -296,6 +361,7 @@ fun EventRow(entry: DashboardViewModel.TimestampedGameEvent) {
         is GameEvent.ItemSuggestion -> "🛒" to AccentOrange
         is GameEvent.SynergyAdvice -> "🤝" to Color(0xFF_00BFA5)
         is GameEvent.GenericTip -> "💡" to TextSecondary
+        is GameEvent.LlmAnalysis -> "🧠" to Color(0xFF_7C4DFF)
     }
 
     Row(

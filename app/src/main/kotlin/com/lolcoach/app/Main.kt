@@ -21,6 +21,8 @@ import com.lolcoach.app.ui.dashboard.DashboardContent
 import com.lolcoach.app.viewmodel.DashboardViewModel
 import com.lolcoach.app.viewmodel.OverlayViewModel
 import com.lolcoach.brain.event.EventProcessor
+import com.lolcoach.brain.llm.LlmCoachService
+import com.lolcoach.brain.llm.LlmConfig
 import com.lolcoach.brain.state.GameStateMachine
 import com.lolcoach.brain.strategy.StrategyEngine
 import com.lolcoach.app.tts.SystemTtsManager
@@ -36,6 +38,14 @@ fun main() = application {
         EventProcessor(scope, stateMachine, strategyEngine.allStrategies())
     }
     val bridge = remember { BridgeFacade(scope) }
+
+    // LLM Coach Service
+    val llmConfig = remember { LlmConfig() }
+    val llmCoachService = remember {
+        if (llmConfig.enabled) {
+            LlmCoachService(scope, llmConfig.createProvider())
+        } else null
+    }
 
     val viewModel = remember {
         OverlayViewModel(scope, eventProcessor.events, stateMachine.state).also { it.start() }
@@ -69,6 +79,15 @@ fun main() = application {
         scope.launch {
             bridge.champSelectEvents.collect { session ->
                 eventProcessor.processChampSelect(session)
+                llmCoachService?.analyzeChampSelect(session)
+            }
+        }
+        // Forward LLM analysis events to the main event processor flow
+        if (llmCoachService != null) {
+            scope.launch {
+                llmCoachService.analysisEvents.collect { event ->
+                    eventProcessor.emitEvent(event)
+                }
             }
         }
         scope.launch {
