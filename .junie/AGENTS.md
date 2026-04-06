@@ -68,3 +68,6 @@ Tests exist for critical components in `bridge/` and `brain/` modules:
 - Overlay is non-intrusive: `focusable=false`, semi-transparent.
 - Graceful degradation if LoL client is unavailable.
 - Retry with exponential backoff for connections.
+
+## Git Policy
+- Agents MUST NOT commit or push changes automatically. All git operations must be explicitly requested by the user.
